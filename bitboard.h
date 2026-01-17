@@ -25,6 +25,12 @@ class Bitboard {
     public:
         Bitboard(U64 board);
         U64 GetBoard() const;
+        void SetBit(Square square);
+        void ClearBit(Square square);
+        bool GetBit(Square square) const;
+        int CountBits() const;
+        int GetLSB() const;
+        int PopLSB();
         void PrintBoard() const;
     private:
         U64 board;

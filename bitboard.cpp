@@ -9,6 +9,32 @@ U64 Bitboard::GetBoard() const {
     return board;
 }
 
+void Bitboard::SetBit(Square square) {
+    board |= 1ULL << square;
+}
+
+void Bitboard::ClearBit(Square square) {
+    board &= ~(1ULL << square);
+}
+
+bool Bitboard::GetBit(Square square) const {
+    return board & (1ULL << square);
+}
+
+int Bitboard::CountBits() const {
+    return __builtin_popcountll(board);
+}
+
+int Bitboard::GetLSB() const {
+    return __builtin_ctzll(board);
+}
+
+int Bitboard::PopLSB() {
+    int lsb = GetLSB();
+    board &= (board - 1);
+    return lsb;
+}
+
 void Bitboard::PrintBoard() const {
     std::cout << std::endl;
     for (int rank = 7; rank >= 0; rank--) {
