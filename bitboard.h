@@ -36,6 +36,7 @@ const U64 DIAGONAL_A8H1 = 0x0102040810204080ULL;
 class Bitboard {
     public:
         Bitboard(U64 board);
+        Bitboard() : board(0) {}
         U64 GetBoard() const;
         void SetBit(Square square);
         void ClearBit(Square square);
