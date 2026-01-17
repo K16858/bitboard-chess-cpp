@@ -26,10 +26,12 @@ int Bitboard::CountBits() const {
 }
 
 int Bitboard::GetLSB() const {
+    if (board == 0) return -1;
     return __builtin_ctzll(board);
 }
 
 int Bitboard::PopLSB() {
+    if (board == 0) return -1;
     int lsb = GetLSB();
     board &= (board - 1);
     return lsb;
