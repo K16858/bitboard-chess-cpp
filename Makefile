@@ -7,7 +7,7 @@ DEBUGFLAGS = -g -O0
 TARGET = chess
 
 # ソースファイルとオブジェクトファイル
-SRCS = main.cpp
+SRCS = main.cpp bitboard.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # デフォルトターゲット
