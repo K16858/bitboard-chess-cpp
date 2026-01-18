@@ -34,6 +34,31 @@ void MoveGen::InitKnightMoves() {
 }
 
 void MoveGen::InitKingMoves() {
+    int kingOffsets[8] = {1, 9, 8, 7, -1, -9, -8, -7};
+
+    for (int square = 0; square < 64; square++) {
+        U64 attacks = 0ULL;
+        int rank = square / 8;
+        int file = square % 8;
+        
+        for (int offset : kingOffsets) {
+            int targetSquare = square + offset;
+            
+            if (targetSquare < 0 || targetSquare >= 64) continue;
+            
+            int targetRank = targetSquare / 8;
+            int targetFile = targetSquare % 8;
+            
+            int rankDiff = abs(targetRank - rank);
+            int fileDiff = abs(targetFile - file);
+            
+            if (rankDiff <= 1 && fileDiff <= 1) {
+                attacks |= (1ULL << targetSquare);
+            }
+        }
+        
+        kingMoves[square] = attacks;
+    }
 }
 
 void MoveGen::Init() {
