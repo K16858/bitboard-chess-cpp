@@ -2,8 +2,8 @@
 #define MOVEGEN_H
 
 #include "board.h"
+#include <functional>
 
-// movegen.h
 class MoveGen {
 private:
     static U64 kingMoves[64];
@@ -12,6 +12,8 @@ private:
     
     static void InitKingMoves();
     static void InitKnightMoves();
+    
+    static U64 GenerateMoves(int square, const int offsets[], int numOffsets, std::function<bool(int, int)> isValidMove);
     
 public:
     static void Init();
