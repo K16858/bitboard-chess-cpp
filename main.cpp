@@ -1,7 +1,7 @@
-#include "bitboard.h"
+#include "board.h"
 
 int main() {
-    Bitboard bb(0x000000000000FF00);
-    bb.PrintBoard();
+    Board board;
+    board.Print();
     return 0;
 }
