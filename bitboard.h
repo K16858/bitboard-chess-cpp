@@ -37,6 +37,7 @@ class Bitboard {
     public:
         Bitboard(U64 board);
         Bitboard() : board(0) {}
+        void SetBoard(U64 newBoard);
         U64 GetBoard() const;
         void SetBit(Square square);
         void ClearBit(Square square);

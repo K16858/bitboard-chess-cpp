@@ -5,6 +5,10 @@ Bitboard::Bitboard(U64 board) {
     this->board = board;
 }
 
+void Bitboard::SetBoard(U64 newBoard) {
+    board = newBoard;
+}
+
 U64 Bitboard::GetBoard() const {
     return board;
 }
