@@ -6,7 +6,12 @@
 
 class MoveGen {
 private:
-    static U64 pawnMoves[64];
+    // ポーンの移動テーブル（色ごと）
+    static U64 whitePawnMoves[64];      // 白ポーンの前進移動
+    static U64 whitePawnCaptures[64];   // 白ポーンのキャプチャ移動
+    static U64 blackPawnMoves[64];      // 黒ポーンの前進移動
+    static U64 blackPawnCaptures[64];   // 黒ポーンのキャプチャ移動
+    
     static U64 rookMoves[64];
     static U64 bishopMoves[64];
     static U64 knightMoves[64];
@@ -25,7 +30,9 @@ private:
     
 public:
     static void Init(); 
-    static U64 GetPawnMoves(Square square);
+    // ポーンの移動（色を指定：true=白、false=黒）
+    static U64 GetPawnMoves(Square square, bool isWhite);
+    static U64 GetPawnCaptures(Square square, bool isWhite);
     static U64 GetRookMoves(Square square);
     static U64 GetBishopMoves(Square square);
     static U64 GetKnightMoves(Square square);

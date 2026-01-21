@@ -2,7 +2,10 @@
 #include <cstdlib>
 #include <functional>
 
-U64 MoveGen::pawnMoves[64] = {0};
+U64 MoveGen::whitePawnMoves[64] = {0};
+U64 MoveGen::whitePawnCaptures[64] = {0};
+U64 MoveGen::blackPawnMoves[64] = {0};
+U64 MoveGen::blackPawnCaptures[64] = {0};
 U64 MoveGen::rookMoves[64] = {0};
 U64 MoveGen::bishopMoves[64] = {0};
 U64 MoveGen::knightMoves[64] = {0};
@@ -93,10 +96,43 @@ void MoveGen::InitKnightMoves() {
 void MoveGen::InitPawnMoves() {
     for (int square = 0; square < 64; square++) {
         int rank = square / 8;
-        U64 moves = 0ULL;
-        if (rank < 7) moves |= (1ULL << (square + 8));
-        if (rank > 0) moves |= (1ULL << (square - 8));
-        pawnMoves[square] = moves;
+        int file = square % 8;
+        
+        // White pawn moves
+        U64 whiteMoves = 0ULL;
+        if (rank < 7) {
+            whiteMoves |= (1ULL << (square + 8));
+            if (rank == 1) {
+                whiteMoves |= (1ULL << (square + 16));
+            }
+        }
+        whitePawnMoves[square] = whiteMoves;
+        
+        // White pawn captures
+        U64 whiteCaptures = 0ULL;
+        if (rank < 7) {
+            if (file < 7) whiteCaptures |= (1ULL << (square + 9));
+            if (file > 0) whiteCaptures |= (1ULL << (square + 7));
+        }
+        whitePawnCaptures[square] = whiteCaptures;
+        
+        // Black pawn moves
+        U64 blackMoves = 0ULL;
+        if (rank > 0) {
+            blackMoves |= (1ULL << (square - 8));
+            if (rank == 6) {
+                blackMoves |= (1ULL << (square - 16));
+            }
+        }
+        blackPawnMoves[square] = blackMoves;
+        
+        // Black pawn captures
+        U64 blackCaptures = 0ULL;
+        if (rank > 0) {
+            if (file < 7) blackCaptures |= (1ULL << (square - 7));
+            if (file > 0) blackCaptures |= (1ULL << (square - 9));
+        }
+        blackPawnCaptures[square] = blackCaptures;
     }
 }
 
@@ -136,8 +172,12 @@ void MoveGen::Init() {
     }
 }
 
-U64 MoveGen::GetPawnMoves(Square square) {
-    return pawnMoves[square];
+U64 MoveGen::GetPawnMoves(Square square, bool isWhite) {
+    return isWhite ? whitePawnMoves[square] : blackPawnMoves[square];
+}
+
+U64 MoveGen::GetPawnCaptures(Square square, bool isWhite) {
+    return isWhite ? whitePawnCaptures[square] : blackPawnCaptures[square];
 }
 
 U64 MoveGen::GetRookMoves(Square square) {
