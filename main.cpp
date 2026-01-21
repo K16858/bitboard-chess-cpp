@@ -8,9 +8,21 @@ int main() {
     Board board;
     board.Print();
     
-    std::cout << "=== Pawn moves from E2: ===" << std::endl;
-    Bitboard pawnMoves(MoveGen::GetPawnMoves(E2));
-    pawnMoves.PrintBoard();
+    std::cout << "=== White Pawn moves from E2: ===" << std::endl;
+    Bitboard whitePawnMoves(MoveGen::GetPawnMoves(E2, true));
+    whitePawnMoves.PrintBoard();
+    
+    std::cout << "=== White Pawn captures from E2: ===" << std::endl;
+    Bitboard whitePawnCaptures(MoveGen::GetPawnCaptures(E2, true));
+    whitePawnCaptures.PrintBoard();
+    
+    std::cout << "=== Black Pawn moves from E7: ===" << std::endl;
+    Bitboard blackPawnMoves(MoveGen::GetPawnMoves(E7, false));
+    blackPawnMoves.PrintBoard();
+    
+    std::cout << "=== Black Pawn captures from E7: ===" << std::endl;
+    Bitboard blackPawnCaptures(MoveGen::GetPawnCaptures(E7, false));
+    blackPawnCaptures.PrintBoard();
     
     std::cout << "=== Knight moves from E4: ===" << std::endl;
     Bitboard knightMoves(MoveGen::GetKnightMoves(E4));
