@@ -1,5 +1,6 @@
 #include "board.h"
 #include "movegen.h"
+#include "move.h"
 #include <iostream>
 
 int main() {
@@ -47,6 +48,16 @@ int main() {
     std::cout << "=== King moves from A1: ===" << std::endl;
     Bitboard kingMovesCorner(MoveGen::GetKingMoves(A1));
     kingMovesCorner.PrintBoard();
+    
+    // Move構造体のテスト
+    std::cout << "=== Move structure test: ===" << std::endl;
+    Move testMove(E2, E4, PAWN);
+    std::cout << "Move from " << testMove.from << " to " << testMove.to 
+              << ", piece: " << testMove.pieceType << std::endl;
+    
+    Move captureMove(E4, D5, PAWN, PAWN);
+    std::cout << "Capture move from " << captureMove.from << " to " << captureMove.to 
+              << ", captured: " << captureMove.capturedPiece << std::endl;
     
     return 0;
 }
