@@ -70,6 +70,40 @@ U64 GenerateSlidingMoves(int square, const int directions[], int numDirections) 
     return attacks;
 }
 
+static U64 GenerateSlidingMovesBlocked(int square, const int directions[], int numDirections, U64 occupancy) {
+    U64 attacks = 0ULL;
+    int rank = square / 8;
+    int file = square % 8;
+    
+    for (int i = 0; i < numDirections; i++) {
+        int offset = directions[i];
+        for (int distance = 1; distance < 8; distance++) {
+            int targetSquare = square + offset * distance;
+            
+            if (targetSquare < 0 || targetSquare >= 64) break;
+            
+            int targetRank = targetSquare / 8;
+            int targetFile = targetSquare % 8;
+            
+            int rankDiff = abs(targetRank - rank);
+            int fileDiff = abs(targetFile - file);
+            
+            if (offset == 1 || offset == -1) {
+                if (rankDiff != 0 || fileDiff != distance) break;
+            } else if (offset == 8 || offset == -8) {
+                if (fileDiff != 0 || rankDiff != distance) break;
+            } else {
+                if (rankDiff != distance || fileDiff != distance) break;
+            }
+            
+            attacks |= (1ULL << targetSquare);
+            if (occupancy & (1ULL << targetSquare)) break;
+        }
+    }
+    
+    return attacks;
+}
+
 void MoveGen::InitKingMoves() {
     int kingOffsets[8] = {1, 9, 8, 7, -1, -9, -8, -7};
     
@@ -180,20 +214,26 @@ U64 MoveGen::GetPawnCaptures(Square square, bool isWhite) {
     return isWhite ? whitePawnCaptures[square] : blackPawnCaptures[square];
 }
 
-U64 MoveGen::GetRookMoves(Square square) {
-    return rookMoves[square];
+U64 MoveGen::GetRookMoves(Square square, U64 occupancy) {
+    if (occupancy == 0) return rookMoves[square];
+    int rookDirections[4] = {1, -1, 8, -8};
+    return GenerateSlidingMovesBlocked(square, rookDirections, 4, occupancy);
 }
 
-U64 MoveGen::GetBishopMoves(Square square) {
-    return bishopMoves[square];
+U64 MoveGen::GetBishopMoves(Square square, U64 occupancy) {
+    if (occupancy == 0) return bishopMoves[square];
+    int bishopDirections[4] = {9, -9, 7, -7};
+    return GenerateSlidingMovesBlocked(square, bishopDirections, 4, occupancy);
 }
 
 U64 MoveGen::GetKnightMoves(Square square) {
     return knightMoves[square];
 }
 
-U64 MoveGen::GetQueenMoves(Square square) {
-    return queenMoves[square];
+U64 MoveGen::GetQueenMoves(Square square, U64 occupancy) {
+    if (occupancy == 0) return queenMoves[square];
+    int queenDirections[8] = {1, -1, 8, -8, 9, -9, 7, -7};
+    return GenerateSlidingMovesBlocked(square, queenDirections, 8, occupancy);
 }
 
 U64 MoveGen::GetKingMoves(Square square) {

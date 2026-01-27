@@ -33,10 +33,10 @@ public:
     // ポーンの移動（色を指定：true=白、false=黒）
     static U64 GetPawnMoves(Square square, bool isWhite);
     static U64 GetPawnCaptures(Square square, bool isWhite);
-    static U64 GetRookMoves(Square square);
-    static U64 GetBishopMoves(Square square);
+    static U64 GetRookMoves(Square square, U64 occupancy = 0);
+    static U64 GetBishopMoves(Square square, U64 occupancy = 0);
     static U64 GetKnightMoves(Square square);
-    static U64 GetQueenMoves(Square square);
+    static U64 GetQueenMoves(Square square, U64 occupancy = 0);
     static U64 GetKingMoves(Square square);
 };
 

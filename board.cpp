@@ -121,3 +121,7 @@ bool Board::IsInCheck(bool white) const {
     if (kingSq < 0) return false;
     return IsSquareAttacked((Square)kingSq, !white);
 }
+
+U64 Board::GetAllPieces() const {
+    return allPieces.GetBoard();
+}

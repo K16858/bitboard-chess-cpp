@@ -30,6 +30,7 @@ class Board {
         int GetPieceAt(Square square) const;
         bool IsSquareAttacked(Square square, bool byWhite) const;
         bool IsInCheck(bool white) const;
+        U64 GetAllPieces() const;
 };
 
 #endif

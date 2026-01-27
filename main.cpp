@@ -14,6 +14,9 @@ int main() {
     std::cout << "IsSquareAttacked(E4, true): " << board.IsSquareAttacked(E4, true) << std::endl;
     std::cout << "IsInCheck(white): " << board.IsInCheck(true) << ", IsInCheck(black): " << board.IsInCheck(false) << std::endl;
     
+    std::cout << "=== Rook E4 without occupancy: " << __builtin_popcountll(MoveGen::GetRookMoves(E4)) << " squares ===" << std::endl;
+    std::cout << "=== Rook E4 with occupancy:  " << __builtin_popcountll(MoveGen::GetRookMoves(E4, board.GetAllPieces())) << " squares ===" << std::endl;
+    
     std::cout << "=== White Pawn moves from E2: ===" << std::endl;
     Bitboard whitePawnMoves(MoveGen::GetPawnMoves(E2, true));
     whitePawnMoves.PrintBoard();
