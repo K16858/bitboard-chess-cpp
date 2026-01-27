@@ -1,4 +1,5 @@
 #include "board.h"
+#include "movegen.h"
 #include <iostream>
 
 Board::Board() {
@@ -71,4 +72,52 @@ void Board::Print() const {
         std::cout << std::endl;
     }
     std::cout << "  a b c d e f g h" << std::endl << std::endl;
+}
+
+int Board::GetPieceAt(Square square) const {
+    if (whitePawns.GetBit(square)) return PAWN;
+    if (whiteKnights.GetBit(square)) return KNIGHT;
+    if (whiteBishops.GetBit(square)) return BISHOP;
+    if (whiteRooks.GetBit(square)) return ROOK;
+    if (whiteQueens.GetBit(square)) return QUEEN;
+    if (whiteKings.GetBit(square)) return KING;
+    if (blackPawns.GetBit(square)) return PAWN;
+    if (blackKnights.GetBit(square)) return KNIGHT;
+    if (blackBishops.GetBit(square)) return BISHOP;
+    if (blackRooks.GetBit(square)) return ROOK;
+    if (blackQueens.GetBit(square)) return QUEEN;
+    if (blackKings.GetBit(square)) return KING;
+    return NO_PIECE;
+}
+
+bool Board::IsSquareAttacked(Square square, bool byWhite) const {
+    U64 sqBit = 1ULL << square;
+    
+    if (byWhite) {
+        for (int sq = 0; sq < 64; sq++) {
+            if (whitePawns.GetBit((Square)sq) && (MoveGen::GetPawnCaptures((Square)sq, true) & sqBit)) return true;
+            if (whiteKnights.GetBit((Square)sq) && (MoveGen::GetKnightMoves((Square)sq) & sqBit)) return true;
+            if (whiteBishops.GetBit((Square)sq) && (MoveGen::GetBishopMoves((Square)sq) & sqBit)) return true;
+            if (whiteRooks.GetBit((Square)sq) && (MoveGen::GetRookMoves((Square)sq) & sqBit)) return true;
+            if (whiteQueens.GetBit((Square)sq) && (MoveGen::GetQueenMoves((Square)sq) & sqBit)) return true;
+            if (whiteKings.GetBit((Square)sq) && (MoveGen::GetKingMoves((Square)sq) & sqBit)) return true;
+        }
+    } else {
+        for (int sq = 0; sq < 64; sq++) {
+            if (blackPawns.GetBit((Square)sq) && (MoveGen::GetPawnCaptures((Square)sq, false) & sqBit)) return true;
+            if (blackKnights.GetBit((Square)sq) && (MoveGen::GetKnightMoves((Square)sq) & sqBit)) return true;
+            if (blackBishops.GetBit((Square)sq) && (MoveGen::GetBishopMoves((Square)sq) & sqBit)) return true;
+            if (blackRooks.GetBit((Square)sq) && (MoveGen::GetRookMoves((Square)sq) & sqBit)) return true;
+            if (blackQueens.GetBit((Square)sq) && (MoveGen::GetQueenMoves((Square)sq) & sqBit)) return true;
+            if (blackKings.GetBit((Square)sq) && (MoveGen::GetKingMoves((Square)sq) & sqBit)) return true;
+        }
+    }
+    return false;
+}
+
+bool Board::IsInCheck(bool white) const {
+    const Bitboard& kings = white ? whiteKings : blackKings;
+    int kingSq = kings.GetLSB();
+    if (kingSq < 0) return false;
+    return IsSquareAttacked((Square)kingSq, !white);
 }

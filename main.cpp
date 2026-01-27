@@ -9,6 +9,11 @@ int main() {
     Board board;
     board.Print();
     
+    std::cout << "=== Board extension test: ===" << std::endl;
+    std::cout << "GetPieceAt(E1): " << board.GetPieceAt(E1) << " (KING=6)" << std::endl;
+    std::cout << "IsSquareAttacked(E4, true): " << board.IsSquareAttacked(E4, true) << std::endl;
+    std::cout << "IsInCheck(white): " << board.IsInCheck(true) << ", IsInCheck(black): " << board.IsInCheck(false) << std::endl;
+    
     std::cout << "=== White Pawn moves from E2: ===" << std::endl;
     Bitboard whitePawnMoves(MoveGen::GetPawnMoves(E2, true));
     whitePawnMoves.PrintBoard();
@@ -49,7 +54,6 @@ int main() {
     Bitboard kingMovesCorner(MoveGen::GetKingMoves(A1));
     kingMovesCorner.PrintBoard();
     
-    // Move構造体のテスト
     std::cout << "=== Move structure test: ===" << std::endl;
     Move testMove(E2, E4, PAWN);
     std::cout << "Move from " << testMove.from << " to " << testMove.to 
