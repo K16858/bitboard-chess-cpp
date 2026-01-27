@@ -2,6 +2,7 @@
 #define BOARD_H
 
 #include "bitboard.h"
+#include "move.h"
 
 class Board {
     private:
@@ -25,6 +26,10 @@ class Board {
         Board();
         void Print() const;
         void Update();
+        
+        int GetPieceAt(Square square) const;
+        bool IsSquareAttacked(Square square, bool byWhite) const;
+        bool IsInCheck(bool white) const;
 };
 
 #endif
