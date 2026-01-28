@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <functional>
+#include <unordered_map>
 
 U64 MoveGen::whitePawnMoves[64] = {0};
 U64 MoveGen::whitePawnCaptures[64] = {0};
@@ -344,6 +345,8 @@ GameResult MoveGen::GetGameResult(Board& board) {
 }
 
 GameResult MoveGen::DoRandomPlayout(Board board, std::mt19937& gen) {
+    std::unordered_map<U64, int> hashCount;
+    hashCount[board.GetZobristHash()] = 1;
     while (true) {
         if (board.GetHalfMoveClock() >= 100) {
             return GameResult::Draw;
@@ -355,5 +358,9 @@ GameResult MoveGen::DoRandomPlayout(Board board, std::mt19937& gen) {
         }
         std::uniform_int_distribution<std::size_t> dist(0, moves.size() - 1);
         board.MakeMove(moves[dist(gen)]);
+        U64 h = board.GetZobristHash();
+        if (++hashCount[h] >= 3) {
+            return GameResult::Draw;
+        }
     }
 }   
