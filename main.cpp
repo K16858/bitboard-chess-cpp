@@ -2,6 +2,7 @@
 #include "movegen.h"
 #include "move.h"
 #include <iostream>
+#include <vector>
 
 int main() {
     MoveGen::Init();
@@ -25,6 +26,15 @@ int main() {
     board.UnmakeMove(e2e4);
     std::cout << "After UnmakeMove, back to:" << std::endl;
     board.Print();
+    
+    std::cout << "=== Legal moves (initial position): ===" << std::endl;
+    std::vector<Move> legalMoves;
+    MoveGen::GenerateLegalMoves(board, legalMoves);
+    std::cout << "White legal moves: " << legalMoves.size() << " (expected 20)" << std::endl;
+    board.MakeMove(e2e4);
+    MoveGen::GenerateLegalMoves(board, legalMoves);
+    std::cout << "Black legal moves after e2-e4: " << legalMoves.size() << " (expected 20)" << std::endl;
+    board.UnmakeMove(e2e4);
     
     std::cout << "=== White Pawn moves from E2: ===" << std::endl;
     Bitboard whitePawnMoves(MoveGen::GetPawnMoves(E2, true));

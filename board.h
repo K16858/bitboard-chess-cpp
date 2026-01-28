@@ -37,6 +37,8 @@ class Board {
         bool IsSquareAttacked(Square square, bool byWhite) const;
         bool IsInCheck(bool white) const;
         U64 GetAllPieces() const;
+        U64 GetWhitePieces() const;
+        U64 GetBlackPieces() const;
         bool GetWhiteToMove() const { return whiteToMove; }
 };
 

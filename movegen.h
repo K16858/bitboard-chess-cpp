@@ -3,6 +3,7 @@
 
 #include "board.h"
 #include <functional>
+#include <vector>
 
 class MoveGen {
 private:
@@ -38,6 +39,7 @@ public:
     static U64 GetKnightMoves(Square square);
     static U64 GetQueenMoves(Square square, U64 occupancy = 0);
     static U64 GetKingMoves(Square square);
+    static void GenerateLegalMoves(Board& board, std::vector<Move>& moves);
 };
 
 #endif

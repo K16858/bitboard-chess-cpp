@@ -126,6 +126,14 @@ U64 Board::GetAllPieces() const {
     return allPieces.GetBoard();
 }
 
+U64 Board::GetWhitePieces() const {
+    return allWhitePieces.GetBoard();
+}
+
+U64 Board::GetBlackPieces() const {
+    return allBlackPieces.GetBoard();
+}
+
 void Board::ClearPieceAt(Square sq, int pieceType, bool white) {
     if (white) {
         if (pieceType == PAWN) whitePawns.ClearBit(sq);

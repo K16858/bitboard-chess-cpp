@@ -239,3 +239,52 @@ U64 MoveGen::GetQueenMoves(Square square, U64 occupancy) {
 U64 MoveGen::GetKingMoves(Square square) {
     return kingMoves[square];
 }
+
+void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
+    moves.clear();
+    bool wtm = board.GetWhiteToMove();
+    U64 allPieces = board.GetAllPieces();
+    U64 ownPieces = wtm ? board.GetWhitePieces() : board.GetBlackPieces();
+    U64 oppPieces = wtm ? board.GetBlackPieces() : board.GetWhitePieces();
+    
+    std::vector<Move> pseudoLegal;
+    for (int sq = 0; sq < 64; sq++) {
+        if (!(ownPieces & (1ULL << sq))) continue;
+        int pieceType = board.GetPieceAt((Square)sq);
+        U64 targets = 0;
+        switch (pieceType) {
+            case PAWN:
+                targets = (GetPawnMoves((Square)sq, wtm) & ~allPieces)
+                        | (GetPawnCaptures((Square)sq, wtm) & oppPieces);
+                break;
+            case KNIGHT:
+                targets = GetKnightMoves((Square)sq) & ~ownPieces;
+                break;
+            case BISHOP:
+                targets = GetBishopMoves((Square)sq, allPieces) & ~ownPieces;
+                break;
+            case ROOK:
+                targets = GetRookMoves((Square)sq, allPieces) & ~ownPieces;
+                break;
+            case QUEEN:
+                targets = GetQueenMoves((Square)sq, allPieces) & ~ownPieces;
+                break;
+            case KING:
+                targets = GetKingMoves((Square)sq) & ~ownPieces;
+                break;
+            default:
+                break;
+        }
+        for (int to = 0; to < 64; to++) {
+            if (!(targets & (1ULL << to))) continue;
+            int cp = (oppPieces & (1ULL << to)) ? board.GetPieceAt((Square)to) : NO_PIECE;
+            pseudoLegal.push_back(Move((Square)sq, (Square)to, pieceType, cp));
+        }
+    }
+    for (const Move& m : pseudoLegal) {
+        board.MakeMove(m);
+        if (!board.IsInCheck(wtm))
+            moves.push_back(m);
+        board.UnmakeMove(m);
+    }
+}
