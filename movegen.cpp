@@ -302,3 +302,13 @@ GameResult MoveGen::GetGameResult(Board& board) {
         return wtm ? GameResult::BlackWin : GameResult::WhiteWin;
     return GameResult::Draw;
 }
+
+GameResult MoveGen::DoRandomPlayout(Board board, std::mt19937& gen) {
+    while (true) {
+        std::vector<Move> moves;
+        GenerateLegalMoves(board, moves);
+        if (moves.empty()) return GetGameResult(board);
+        std::uniform_int_distribution<std::size_t> dist(0, moves.size() - 1);
+        board.MakeMove(moves[dist(gen)]);
+    }
+}

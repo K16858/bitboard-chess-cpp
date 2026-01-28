@@ -3,6 +3,7 @@
 
 #include "board.h"
 #include <functional>
+#include <random>
 #include <vector>
 
 class MoveGen {
@@ -42,6 +43,8 @@ public:
     static void GenerateLegalMoves(Board& board, std::vector<Move>& moves);
     /// 終局結果を返す（白勝ち=1, 黒勝ち=-1, 引き分け=0, 進行中=Ongoing）
     static GameResult GetGameResult(Board& board);
+    /// ランダムプレイアウト
+    static GameResult DoRandomPlayout(Board board, std::mt19937& gen);
 };
 
 #endif
