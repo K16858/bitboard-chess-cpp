@@ -11,6 +11,14 @@ int main() {
     Board board;
     board.Print();
     
+    U64 h0 = board.GetZobristHash();
+    Move e2e4(E2, E4, PAWN);
+    board.MakeMove(e2e4);
+    U64 h1 = board.GetZobristHash();
+    board.UnmakeMove(e2e4);
+    U64 h2 = board.GetZobristHash();
+    std::cout << "Zobrist test: initial=" << h0 << " after e2e4=" << h1 << " after unmake=" << h2 << " (h0==h2? " << (h0 == h2 ? "OK" : "FAIL") << ")" << std::endl;
+    
     Board gameBoard;
     std::string input;
 

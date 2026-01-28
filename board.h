@@ -3,6 +3,7 @@
 
 #include "bitboard.h"
 #include "move.h"
+#include "zobrist.h"
 
 class Board {
     private:
@@ -23,9 +24,11 @@ class Board {
         Bitboard blackQueens;
         Bitboard blackKings;
         bool whiteToMove;
+        U64 zobristHash;
         
         void ClearPieceAt(Square sq, int pieceType, bool white);
         void SetPieceAt(Square sq, int pieceType, bool white);
+        void ComputeZobristHash();
     public:
         Board();
         Board(const Board&) = default;
@@ -42,6 +45,7 @@ class Board {
         U64 GetWhitePieces() const;
         U64 GetBlackPieces() const;
         bool GetWhiteToMove() const { return whiteToMove; }
+        U64 GetZobristHash() const { return zobristHash; }
 };
 
 #endif

@@ -1,8 +1,10 @@
 #include "board.h"
 #include "movegen.h"
+#include "zobrist.h"
 #include <iostream>
 
-Board::Board() : whiteToMove(true) {
+Board::Board() : whiteToMove(true), zobristHash(0) {
+    Zobrist::Init();
     whitePawns.SetBoard(0x000000000000FF00ULL);
     whiteKnights.SetBoard(0x0000000000000042ULL);
     whiteBishops.SetBoard(0x0000000000000024ULL);
@@ -18,6 +20,27 @@ Board::Board() : whiteToMove(true) {
     blackKings.SetBoard(0x1000000000000000ULL);
     
     Update();
+    ComputeZobristHash();
+}
+
+void Board::ComputeZobristHash() {
+    zobristHash = 0;
+    for (int sq = 0; sq < 64; sq++) {
+        Square s = static_cast<Square>(sq);
+        if (whitePawns.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, PAWN, true);
+        else if (whiteKnights.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, KNIGHT, true);
+        else if (whiteBishops.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, BISHOP, true);
+        else if (whiteRooks.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, ROOK, true);
+        else if (whiteQueens.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, QUEEN, true);
+        else if (whiteKings.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, KING, true);
+        else if (blackPawns.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, PAWN, false);
+        else if (blackKnights.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, KNIGHT, false);
+        else if (blackBishops.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, BISHOP, false);
+        else if (blackRooks.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, ROOK, false);
+        else if (blackQueens.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, QUEEN, false);
+        else if (blackKings.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, KING, false);
+    }
+    if (!whiteToMove) zobristHash ^= Zobrist::GetSideKey();
 }
 
 void Board::Update() {
@@ -172,11 +195,16 @@ void Board::SetPieceAt(Square sq, int pieceType, bool white) {
 
 void Board::MakeMove(const Move& move) {
     bool wtm = whiteToMove;
+    zobristHash ^= Zobrist::GetPieceKey(move.from, move.pieceType, wtm);
+    if (move.capturedPiece != NO_PIECE)
+        zobristHash ^= Zobrist::GetPieceKey(move.to, move.capturedPiece, !wtm);
+    int pieceToPlace = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
+    zobristHash ^= Zobrist::GetPieceKey(move.to, pieceToPlace, wtm);
+    zobristHash ^= Zobrist::GetSideKey();
     if (move.capturedPiece != NO_PIECE) {
         ClearPieceAt(move.to, move.capturedPiece, !wtm);
     }
     ClearPieceAt(move.from, move.pieceType, wtm);
-    int pieceToPlace = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
     SetPieceAt(move.to, pieceToPlace, wtm);
     whiteToMove = !whiteToMove;
     Update();
@@ -185,7 +213,12 @@ void Board::MakeMove(const Move& move) {
 void Board::UnmakeMove(const Move& move) {
     whiteToMove = !whiteToMove;
     bool wtm = whiteToMove;
+    zobristHash ^= Zobrist::GetSideKey();
     int pieceToRemove = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
+    zobristHash ^= Zobrist::GetPieceKey(move.to, pieceToRemove, wtm);
+    zobristHash ^= Zobrist::GetPieceKey(move.from, move.pieceType, wtm);
+    if (move.capturedPiece != NO_PIECE)
+        zobristHash ^= Zobrist::GetPieceKey(move.to, move.capturedPiece, !wtm);
     ClearPieceAt(move.to, pieceToRemove, wtm);
     SetPieceAt(move.from, move.pieceType, wtm);
     if (move.capturedPiece != NO_PIECE) {
