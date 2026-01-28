@@ -292,3 +292,13 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
         return a.from < b.from || (a.from == b.from && a.to < b.to);
     });
 }
+
+GameResult MoveGen::GetGameResult(Board& board) {
+    std::vector<Move> moves;
+    GenerateLegalMoves(board, moves);
+    if (!moves.empty()) return GameResult::Ongoing;
+    bool wtm = board.GetWhiteToMove();
+    if (board.IsInCheck(wtm))
+        return wtm ? GameResult::BlackWin : GameResult::WhiteWin;
+    return GameResult::Draw;
+}

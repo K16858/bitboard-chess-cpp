@@ -40,6 +40,8 @@ public:
     static U64 GetQueenMoves(Square square, U64 occupancy = 0);
     static U64 GetKingMoves(Square square);
     static void GenerateLegalMoves(Board& board, std::vector<Move>& moves);
+    /// 終局結果を返す（白勝ち=1, 黒勝ち=-1, 引き分け=0, 進行中=Ongoing）
+    static GameResult GetGameResult(Board& board);
 };
 
 #endif
