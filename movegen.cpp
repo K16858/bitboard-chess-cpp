@@ -247,6 +247,7 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
     U64 allPieces = board.GetAllPieces();
     U64 ownPieces = wtm ? board.GetWhitePieces() : board.GetBlackPieces();
     U64 oppPieces = wtm ? board.GetBlackPieces() : board.GetWhitePieces();
+    int ep = board.GetEnPassantTarget();
     
     std::vector<Move> pseudoLegal;
     for (int sq = 0; sq < 64; sq++) {
@@ -254,10 +255,18 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
         int pieceType = board.GetPieceAt((Square)sq);
         U64 targets = 0;
         switch (pieceType) {
-            case PAWN:
+            case PAWN: {
                 targets = (GetPawnMoves((Square)sq, wtm) & ~allPieces)
                         | (GetPawnCaptures((Square)sq, wtm) & oppPieces);
+                if (ep >= 0) {
+                    int sr = sq / 8, sf = sq % 8, er = ep / 8, ef = ep % 8;
+                    if (wtm && sr == 3 && er == 4 && (sf - ef) * (sf - ef) == 1)
+                        targets |= (1ULL << ep);
+                    if (!wtm && sr == 4 && er == 2 && (sf - ef) * (sf - ef) == 1)
+                        targets |= (1ULL << ep);
+                }
                 break;
+            }
             case KNIGHT:
                 targets = GetKnightMoves((Square)sq) & ~ownPieces;
                 break;
@@ -278,7 +287,11 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
         }
         for (int to = 0; to < 64; to++) {
             if (!(targets & (1ULL << to))) continue;
-            int cp = (oppPieces & (1ULL << to)) ? board.GetPieceAt((Square)to) : NO_PIECE;
+            int cp = NO_PIECE;
+            if (pieceType == PAWN && ep >= 0 && to == ep)
+                cp = PAWN;
+            else if (oppPieces & (1ULL << to))
+                cp = board.GetPieceAt((Square)to);
             pseudoLegal.push_back(Move((Square)sq, (Square)to, pieceType, cp));
         }
     }

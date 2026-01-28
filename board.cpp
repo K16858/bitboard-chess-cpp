@@ -197,14 +197,20 @@ void Board::MakeMove(const Move& move) {
     bool wtm = whiteToMove;
     undoStack_.push_back({castlingRights_, enPassantTarget_, halfMoveClock_});
 
+    bool enPassant = (move.pieceType == PAWN && move.capturedPiece == PAWN &&
+                      GetPieceAt(move.to) == NO_PIECE);
+    Square capSq = move.to;
+    if (enPassant)
+        capSq = wtm ? static_cast<Square>(static_cast<int>(move.to) - 8) : static_cast<Square>(static_cast<int>(move.to) + 8);
+
     zobristHash ^= Zobrist::GetPieceKey(move.from, move.pieceType, wtm);
     if (move.capturedPiece != NO_PIECE)
-        zobristHash ^= Zobrist::GetPieceKey(move.to, move.capturedPiece, !wtm);
+        zobristHash ^= Zobrist::GetPieceKey(capSq, move.capturedPiece, !wtm);
     int pieceToPlace = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
     zobristHash ^= Zobrist::GetPieceKey(move.to, pieceToPlace, wtm);
     zobristHash ^= Zobrist::GetSideKey();
     if (move.capturedPiece != NO_PIECE) {
-        ClearPieceAt(move.to, move.capturedPiece, !wtm);
+        ClearPieceAt(capSq, move.capturedPiece, !wtm);
     }
     ClearPieceAt(move.from, move.pieceType, wtm);
     SetPieceAt(move.to, pieceToPlace, wtm);
@@ -244,16 +250,20 @@ void Board::MakeMove(const Move& move) {
 void Board::UnmakeMove(const Move& move) {
     whiteToMove = !whiteToMove;
     bool wtm = whiteToMove;
+    bool enPassant = (move.pieceType == PAWN && move.capturedPiece == PAWN);
+    Square capSq = move.to;
+    if (enPassant)
+        capSq = wtm ? static_cast<Square>(static_cast<int>(move.to) - 8) : static_cast<Square>(static_cast<int>(move.to) + 8);
     zobristHash ^= Zobrist::GetSideKey();
     int pieceToRemove = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
     zobristHash ^= Zobrist::GetPieceKey(move.to, pieceToRemove, wtm);
     zobristHash ^= Zobrist::GetPieceKey(move.from, move.pieceType, wtm);
     if (move.capturedPiece != NO_PIECE)
-        zobristHash ^= Zobrist::GetPieceKey(move.to, move.capturedPiece, !wtm);
+        zobristHash ^= Zobrist::GetPieceKey(capSq, move.capturedPiece, !wtm);
     ClearPieceAt(move.to, pieceToRemove, wtm);
     SetPieceAt(move.from, move.pieceType, wtm);
     if (move.capturedPiece != NO_PIECE) {
-        SetPieceAt(move.to, move.capturedPiece, !wtm);
+        SetPieceAt(capSq, move.capturedPiece, !wtm);
     }
     BoardUndoState u = undoStack_.back();
     undoStack_.pop_back();
