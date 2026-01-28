@@ -17,6 +17,15 @@ int main() {
     std::cout << "=== Rook E4 without occupancy: " << __builtin_popcountll(MoveGen::GetRookMoves(E4)) << " squares ===" << std::endl;
     std::cout << "=== Rook E4 with occupancy:  " << __builtin_popcountll(MoveGen::GetRookMoves(E4, board.GetAllPieces())) << " squares ===" << std::endl;
     
+    std::cout << "=== MakeMove/UnmakeMove test (e2-e4): ===" << std::endl;
+    Move e2e4(E2, E4, PAWN);
+    board.MakeMove(e2e4);
+    std::cout << "After e2-e4, sideToMove=" << (board.GetWhiteToMove() ? "white" : "black") << std::endl;
+    board.Print();
+    board.UnmakeMove(e2e4);
+    std::cout << "After UnmakeMove, back to:" << std::endl;
+    board.Print();
+    
     std::cout << "=== White Pawn moves from E2: ===" << std::endl;
     Bitboard whitePawnMoves(MoveGen::GetPawnMoves(E2, true));
     whitePawnMoves.PrintBoard();

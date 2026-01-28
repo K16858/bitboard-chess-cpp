@@ -22,15 +22,22 @@ class Board {
         Bitboard blackRooks;
         Bitboard blackQueens;
         Bitboard blackKings;
+        bool whiteToMove;
+        
+        void ClearPieceAt(Square sq, int pieceType, bool white);
+        void SetPieceAt(Square sq, int pieceType, bool white);
     public:
         Board();
         void Print() const;
         void Update();
+        void MakeMove(const Move& move);
+        void UnmakeMove(const Move& move);
         
         int GetPieceAt(Square square) const;
         bool IsSquareAttacked(Square square, bool byWhite) const;
         bool IsInCheck(bool white) const;
         U64 GetAllPieces() const;
+        bool GetWhiteToMove() const { return whiteToMove; }
 };
 
 #endif

@@ -2,7 +2,7 @@
 #include "movegen.h"
 #include <iostream>
 
-Board::Board() {
+Board::Board() : whiteToMove(true) {
     whitePawns.SetBoard(0x000000000000FF00ULL);
     whiteKnights.SetBoard(0x0000000000000042ULL);
     whiteBishops.SetBoard(0x0000000000000024ULL);
@@ -124,4 +124,64 @@ bool Board::IsInCheck(bool white) const {
 
 U64 Board::GetAllPieces() const {
     return allPieces.GetBoard();
+}
+
+void Board::ClearPieceAt(Square sq, int pieceType, bool white) {
+    if (white) {
+        if (pieceType == PAWN) whitePawns.ClearBit(sq);
+        else if (pieceType == KNIGHT) whiteKnights.ClearBit(sq);
+        else if (pieceType == BISHOP) whiteBishops.ClearBit(sq);
+        else if (pieceType == ROOK) whiteRooks.ClearBit(sq);
+        else if (pieceType == QUEEN) whiteQueens.ClearBit(sq);
+        else if (pieceType == KING) whiteKings.ClearBit(sq);
+    } else {
+        if (pieceType == PAWN) blackPawns.ClearBit(sq);
+        else if (pieceType == KNIGHT) blackKnights.ClearBit(sq);
+        else if (pieceType == BISHOP) blackBishops.ClearBit(sq);
+        else if (pieceType == ROOK) blackRooks.ClearBit(sq);
+        else if (pieceType == QUEEN) blackQueens.ClearBit(sq);
+        else if (pieceType == KING) blackKings.ClearBit(sq);
+    }
+}
+
+void Board::SetPieceAt(Square sq, int pieceType, bool white) {
+    if (white) {
+        if (pieceType == PAWN) whitePawns.SetBit(sq);
+        else if (pieceType == KNIGHT) whiteKnights.SetBit(sq);
+        else if (pieceType == BISHOP) whiteBishops.SetBit(sq);
+        else if (pieceType == ROOK) whiteRooks.SetBit(sq);
+        else if (pieceType == QUEEN) whiteQueens.SetBit(sq);
+        else if (pieceType == KING) whiteKings.SetBit(sq);
+    } else {
+        if (pieceType == PAWN) blackPawns.SetBit(sq);
+        else if (pieceType == KNIGHT) blackKnights.SetBit(sq);
+        else if (pieceType == BISHOP) blackBishops.SetBit(sq);
+        else if (pieceType == ROOK) blackRooks.SetBit(sq);
+        else if (pieceType == QUEEN) blackQueens.SetBit(sq);
+        else if (pieceType == KING) blackKings.SetBit(sq);
+    }
+}
+
+void Board::MakeMove(const Move& move) {
+    bool wtm = whiteToMove;
+    if (move.capturedPiece != NO_PIECE) {
+        ClearPieceAt(move.to, move.capturedPiece, !wtm);
+    }
+    ClearPieceAt(move.from, move.pieceType, wtm);
+    int pieceToPlace = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
+    SetPieceAt(move.to, pieceToPlace, wtm);
+    whiteToMove = !whiteToMove;
+    Update();
+}
+
+void Board::UnmakeMove(const Move& move) {
+    whiteToMove = !whiteToMove;
+    bool wtm = whiteToMove;
+    int pieceToRemove = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
+    ClearPieceAt(move.to, pieceToRemove, wtm);
+    SetPieceAt(move.from, move.pieceType, wtm);
+    if (move.capturedPiece != NO_PIECE) {
+        SetPieceAt(move.to, move.capturedPiece, !wtm);
+    }
+    Update();
 }
