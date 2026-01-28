@@ -1,8 +1,8 @@
 #ifndef MCTS_H
 #define MCTS_H
 
-#include "board.h"
-#include "move.h"
+#include "board.hpp"
+#include "move.hpp"
 #include <random>
 #include <utility>
 #include <vector>

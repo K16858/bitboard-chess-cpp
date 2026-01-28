@@ -1,9 +1,8 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "bitboard.h"
-#include "move.h"
-#include "zobrist.h"
+#include "bitboard.hpp"
+#include "move.hpp"
 #include <cstdint>
 #include <string>
 #include <vector>

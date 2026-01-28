@@ -1,7 +1,7 @@
 #ifndef MOVE_H
 #define MOVE_H
 
-#include "bitboard.h"
+#include "bitboard.hpp"
 #include <string>
 
 enum PieceType {

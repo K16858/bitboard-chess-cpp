@@ -1,6 +1,6 @@
-#include "board.h"
-#include "movegen.h"
-#include "zobrist.h"
+#include "board.hpp"
+#include "movegen.hpp"
+#include "zobrist.hpp"
 #include <iostream>
 #include <sstream>
 #include <cctype>

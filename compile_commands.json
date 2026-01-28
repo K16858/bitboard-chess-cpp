@@ -1,0 +1,32 @@
+[
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/bitboard.cpp -o bitboard.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/bitboard.cpp"
+  },
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/board.cpp -o board.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/board.cpp"
+  },
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/main.cpp -o main.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/main.cpp"
+  },
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/move.cpp -o move.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/move.cpp"
+  },
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/movegen.cpp -o movegen.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/movegen.cpp"
+  },
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/zobrist.cpp -o zobrist.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/zobrist.cpp"
+  }
+]

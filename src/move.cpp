@@ -1,4 +1,4 @@
-#include "move.h"
+#include "move.hpp"
 #include <cctype>
 
 std::string SquareToStr(Square s) {

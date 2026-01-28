@@ -1,4 +1,4 @@
-#include "zobrist.h"
+#include "zobrist.hpp"
 #include <random>
 
 U64 Zobrist::table[64][12] = {{0}};

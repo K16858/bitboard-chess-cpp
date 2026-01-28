@@ -1,0 +1,32 @@
+[
+  {
+    "directory": "@PROJECT_ROOT@",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/bitboard.cpp -o bitboard.o",
+    "file": "@PROJECT_ROOT@/src/bitboard.cpp"
+  },
+  {
+    "directory": "@PROJECT_ROOT@",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/board.cpp -o board.o",
+    "file": "@PROJECT_ROOT@/src/board.cpp"
+  },
+  {
+    "directory": "@PROJECT_ROOT@",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/main.cpp -o main.o",
+    "file": "@PROJECT_ROOT@/src/main.cpp"
+  },
+  {
+    "directory": "@PROJECT_ROOT@",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/move.cpp -o move.o",
+    "file": "@PROJECT_ROOT@/src/move.cpp"
+  },
+  {
+    "directory": "@PROJECT_ROOT@",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/movegen.cpp -o movegen.o",
+    "file": "@PROJECT_ROOT@/src/movegen.cpp"
+  },
+  {
+    "directory": "@PROJECT_ROOT@",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/zobrist.cpp -o zobrist.o",
+    "file": "@PROJECT_ROOT@/src/zobrist.cpp"
+  }
+]

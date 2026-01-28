@@ -1,4 +1,4 @@
-#include "movegen.h"
+#include "movegen.hpp"
 #include <algorithm>
 #include <cstdlib>
 #include <functional>

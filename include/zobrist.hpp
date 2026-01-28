@@ -1,8 +1,7 @@
 #ifndef ZOBRIST_H
 #define ZOBRIST_H
 
-#include "bitboard.h"
-#include "move.h"
+#include "bitboard.hpp"
 
 /// Zobrist ハッシュ用テーブル
 class Zobrist {

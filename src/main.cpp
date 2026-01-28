@@ -1,6 +1,6 @@
-#include "board.h"
-#include "movegen.h"
-#include "move.h"
+#include "board.hpp"
+#include "movegen.hpp"
+#include "move.hpp"
 #include <iostream>
 // #include <string>
 // #include <random>

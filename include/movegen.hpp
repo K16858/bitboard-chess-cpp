@@ -1,7 +1,7 @@
 #ifndef MOVEGEN_H
 #define MOVEGEN_H
 
-#include "board.h"
+#include "board.hpp"
 #include <functional>
 #include <random>
 #include <vector>

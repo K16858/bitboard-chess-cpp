@@ -1,4 +1,4 @@
-#include "bitboard.h"
+#include "bitboard.hpp"
 #include <iostream>
 
 Bitboard::Bitboard(U64 board) {
