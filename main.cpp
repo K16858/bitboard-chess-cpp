@@ -17,6 +17,14 @@ int main() {
         std::vector<Move> legalMoves;
         MoveGen::GenerateLegalMoves(gameBoard, legalMoves);
         gameBoard.Print();
+        if (legalMoves.empty()) {
+            if (gameBoard.IsInCheck(gameBoard.GetWhiteToMove())) {
+                std::cout << "Checkmate. " << (gameBoard.GetWhiteToMove() ? "Black" : "White") << " wins.\n";
+            } else {
+                std::cout << "Stalemate. Draw.\n";
+            }
+            break;
+        }
         std::cout << (gameBoard.GetWhiteToMove() ? "White" : "Black") << " to move (e.g. e2e4 or quit): ";
         std::getline(std::cin, input);
         if (input == "quit" || input == "q") break;
