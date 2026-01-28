@@ -14,6 +14,8 @@ enum PieceType {
     KING = 6
 };
 
+enum class GameResult { WhiteWin = 1, BlackWin = -1, Draw = 0, Ongoing = 2 };
+
 struct Move {
     Square from;
     Square to;
