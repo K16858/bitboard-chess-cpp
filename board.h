@@ -5,6 +5,13 @@
 #include "move.h"
 #include "zobrist.h"
 #include <cstdint>
+#include <vector>
+
+struct BoardUndoState {
+    uint8_t castlingRights;
+    int enPassantTarget;
+    int halfMoveClock;
+};
 
 class Board {
     private:
@@ -29,6 +36,7 @@ class Board {
         uint8_t castlingRights_;  // bit0=白キング側, bit1=白クイーン側, bit2=黒キング側, bit3=黒クイーン側. 1=可能
         int enPassantTarget_;     // アンパッサン可能な「取られるマス」の square index (0-63), なければ -1
         int halfMoveClock_;       // 50手ルール用。キャプチャ/ポーン移動で0に、それ以外で+1
+        std::vector<BoardUndoState> undoStack_;
 
         void ClearPieceAt(Square sq, int pieceType, bool white);
         void SetPieceAt(Square sq, int pieceType, bool white);

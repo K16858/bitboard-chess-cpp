@@ -195,6 +195,8 @@ void Board::SetPieceAt(Square sq, int pieceType, bool white) {
 
 void Board::MakeMove(const Move& move) {
     bool wtm = whiteToMove;
+    undoStack_.push_back({castlingRights_, enPassantTarget_, halfMoveClock_});
+
     zobristHash ^= Zobrist::GetPieceKey(move.from, move.pieceType, wtm);
     if (move.capturedPiece != NO_PIECE)
         zobristHash ^= Zobrist::GetPieceKey(move.to, move.capturedPiece, !wtm);
@@ -207,6 +209,35 @@ void Board::MakeMove(const Move& move) {
     ClearPieceAt(move.from, move.pieceType, wtm);
     SetPieceAt(move.to, pieceToPlace, wtm);
     whiteToMove = !whiteToMove;
+
+    int fromRank = static_cast<int>(move.from) / 8, toRank = static_cast<int>(move.to) / 8;
+    if (move.pieceType == PAWN && fromRank == 1 && toRank == 3)
+        enPassantTarget_ = static_cast<int>(move.from) + 8;
+    else if (move.pieceType == PAWN && fromRank == 6 && toRank == 4)
+        enPassantTarget_ = static_cast<int>(move.from) - 8;
+    else
+        enPassantTarget_ = -1;
+
+    if (move.pieceType == KING)
+        castlingRights_ &= wtm ? static_cast<uint8_t>(~3u) : static_cast<uint8_t>(~12u);
+    else if (move.pieceType == ROOK) {
+        if (move.from == H1) castlingRights_ &= static_cast<uint8_t>(~1u);
+        else if (move.from == A1) castlingRights_ &= static_cast<uint8_t>(~2u);
+        else if (move.from == H8) castlingRights_ &= static_cast<uint8_t>(~4u);
+        else if (move.from == A8) castlingRights_ &= static_cast<uint8_t>(~8u);
+    }
+    if (move.capturedPiece == ROOK) {
+        if (move.to == H1) castlingRights_ &= static_cast<uint8_t>(~1u);
+        else if (move.to == A1) castlingRights_ &= static_cast<uint8_t>(~2u);
+        else if (move.to == H8) castlingRights_ &= static_cast<uint8_t>(~4u);
+        else if (move.to == A8) castlingRights_ &= static_cast<uint8_t>(~8u);
+    }
+
+    if (move.capturedPiece != NO_PIECE || move.pieceType == PAWN)
+        halfMoveClock_ = 0;
+    else
+        halfMoveClock_++;
+
     Update();
 }
 
@@ -224,5 +255,10 @@ void Board::UnmakeMove(const Move& move) {
     if (move.capturedPiece != NO_PIECE) {
         SetPieceAt(move.to, move.capturedPiece, !wtm);
     }
+    BoardUndoState u = undoStack_.back();
+    undoStack_.pop_back();
+    castlingRights_ = u.castlingRights;
+    enPassantTarget_ = u.enPassantTarget;
+    halfMoveClock_ = u.halfMoveClock;
     Update();
 }
