@@ -304,7 +304,15 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
                 cp = PAWN;
             else if (oppPieces & (1ULL << to))
                 cp = board.GetPieceAt((Square)to);
-            pseudoLegal.push_back(Move((Square)sq, (Square)to, pieceType, cp));
+            bool promote = (pieceType == PAWN && ((wtm && to >= 56) || (!wtm && to < 8)));
+            if (promote) {
+                pseudoLegal.push_back(Move((Square)sq, (Square)to, PAWN, cp, QUEEN));
+                pseudoLegal.push_back(Move((Square)sq, (Square)to, PAWN, cp, ROOK));
+                pseudoLegal.push_back(Move((Square)sq, (Square)to, PAWN, cp, BISHOP));
+                pseudoLegal.push_back(Move((Square)sq, (Square)to, PAWN, cp, KNIGHT));
+            } else {
+                pseudoLegal.push_back(Move((Square)sq, (Square)to, pieceType, cp));
+            }
         }
     }
     for (const Move& m : pseudoLegal) {
@@ -314,7 +322,8 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
         board.UnmakeMove(m);
     }
     std::sort(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
-        return a.from < b.from || (a.from == b.from && a.to < b.to);
+        return a.from < b.from
+            || (a.from == b.from && (a.to < b.to || (a.to == b.to && a.promotionPiece < b.promotionPiece)));
     });
 }
 
