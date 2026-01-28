@@ -1,6 +1,7 @@
 #include "board.hpp"
 #include "movegen.hpp"
 #include "move.hpp"
+#include "mcts.hpp"
 #include <iostream>
 // #include <string>
 // #include <random>
@@ -43,7 +44,18 @@ int main() {
     board.Print();
     board.SetFromFen("b2r1r2/4nk2/p1q1p1p1/1p3pP1/3P1P2/P1N1B2R/1P2Q3/5RK1 w - - 0 31");
     board.Print();
-    
+
+    // MCTS
+    std::mt19937 gen(std::random_device{}());
+    MCTSResult res = RunMCTS(board, 500, gen);
+    std::cout << "--- MCTS --- rootVisits=" << res.rootVisits << " rootValue=" << res.rootValue << "\n";
+    std::cout << "Top moves: ";
+    int top = static_cast<int>(res.visits.size()) < 5 ? static_cast<int>(res.visits.size()) : 5;
+    for (int i = 0; i < top; i++)
+        std::cout << SquareToStr(res.visits[i].first.from) << SquareToStr(res.visits[i].first.to)
+                  << "(" << res.visits[i].second << ") ";
+    std::cout << "\n";
+
     // U64 h0 = board.GetZobristHash();
     // Move e2e4(E2, E4, PAWN);
     // board.MakeMove(e2e4);
@@ -55,7 +67,6 @@ int main() {
     // Board gameBoard;
     // std::string input;
 
-    std::mt19937 gen(std::random_device{}());
     int whiteWins = 0, blackWins = 0, draws = 0;
     for (int i = 0; i < 100; i++) {
         GameResult r = MoveGen::DoRandomPlayout(board, gen);
