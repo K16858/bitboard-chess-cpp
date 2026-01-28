@@ -214,6 +214,19 @@ void Board::MakeMove(const Move& move) {
     }
     ClearPieceAt(move.from, move.pieceType, wtm);
     SetPieceAt(move.to, pieceToPlace, wtm);
+    bool castling = (move.pieceType == KING && (move.from == E1 || move.from == E8) &&
+                     (move.to == G1 || move.to == C1 || move.to == G8 || move.to == C8));
+    if (castling) {
+        Square rookFrom, rookTo;
+        if (move.from == E1 && move.to == G1) { rookFrom = H1; rookTo = F1; }
+        else if (move.from == E1 && move.to == C1) { rookFrom = A1; rookTo = D1; }
+        else if (move.from == E8 && move.to == G8) { rookFrom = H8; rookTo = F8; }
+        else { rookFrom = A8; rookTo = D8; }
+        zobristHash ^= Zobrist::GetPieceKey(rookFrom, ROOK, wtm);
+        zobristHash ^= Zobrist::GetPieceKey(rookTo, ROOK, wtm);
+        ClearPieceAt(rookFrom, ROOK, wtm);
+        SetPieceAt(rookTo, ROOK, wtm);
+    }
     whiteToMove = !whiteToMove;
 
     int fromRank = static_cast<int>(move.from) / 8, toRank = static_cast<int>(move.to) / 8;
@@ -254,6 +267,19 @@ void Board::UnmakeMove(const Move& move) {
     Square capSq = move.to;
     if (enPassant)
         capSq = wtm ? static_cast<Square>(static_cast<int>(move.to) - 8) : static_cast<Square>(static_cast<int>(move.to) + 8);
+    bool castling = (move.pieceType == KING && (move.from == E1 || move.from == E8) &&
+                     (move.to == G1 || move.to == C1 || move.to == G8 || move.to == C8));
+    if (castling) {
+        Square rookFrom, rookTo;
+        if (move.from == E1 && move.to == G1) { rookFrom = H1; rookTo = F1; }
+        else if (move.from == E1 && move.to == C1) { rookFrom = A1; rookTo = D1; }
+        else if (move.from == E8 && move.to == G8) { rookFrom = H8; rookTo = F8; }
+        else { rookFrom = A8; rookTo = D8; }
+        ClearPieceAt(rookTo, ROOK, wtm);
+        SetPieceAt(rookFrom, ROOK, wtm);
+        zobristHash ^= Zobrist::GetPieceKey(rookTo, ROOK, wtm);
+        zobristHash ^= Zobrist::GetPieceKey(rookFrom, ROOK, wtm);
+    }
     zobristHash ^= Zobrist::GetSideKey();
     int pieceToRemove = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
     zobristHash ^= Zobrist::GetPieceKey(move.to, pieceToRemove, wtm);

@@ -250,6 +250,18 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
     int ep = board.GetEnPassantTarget();
     
     std::vector<Move> pseudoLegal;
+    // キャスリング: キングが2マス動く手を pseudo-legal に追加（ルーク側・クイーン側、空きマス条件のみ）
+    if (wtm) {
+        if (board.CanWhiteKingsideCastle() && !(allPieces & ((1ULL << F1) | (1ULL << G1))))
+            pseudoLegal.push_back(Move(E1, G1, KING));
+        if (board.CanWhiteQueensideCastle() && !(allPieces & ((1ULL << B1) | (1ULL << C1) | (1ULL << D1))))
+            pseudoLegal.push_back(Move(E1, C1, KING));
+    } else {
+        if (board.CanBlackKingsideCastle() && !(allPieces & ((1ULL << F8) | (1ULL << G8))))
+            pseudoLegal.push_back(Move(E8, G8, KING));
+        if (board.CanBlackQueensideCastle() && !(allPieces & ((1ULL << B8) | (1ULL << C8) | (1ULL << D8))))
+            pseudoLegal.push_back(Move(E8, C8, KING));
+    }
     for (int sq = 0; sq < 64; sq++) {
         if (!(ownPieces & (1ULL << sq))) continue;
         int pieceType = board.GetPieceAt((Square)sq);
