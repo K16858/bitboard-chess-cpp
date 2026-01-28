@@ -328,21 +328,32 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
 }
 
 GameResult MoveGen::GetGameResult(Board& board) {
+    if (board.GetHalfMoveClock() >= 100) {
+        return GameResult::Draw;
+    }
     std::vector<Move> moves;
     GenerateLegalMoves(board, moves);
-    if (!moves.empty()) return GameResult::Ongoing;
+    if (!moves.empty()) {
+        return GameResult::Ongoing;
+    }
     bool wtm = board.GetWhiteToMove();
-    if (board.IsInCheck(wtm))
+    if (board.IsInCheck(wtm)) {
         return wtm ? GameResult::BlackWin : GameResult::WhiteWin;
+    }
     return GameResult::Draw;
 }
 
 GameResult MoveGen::DoRandomPlayout(Board board, std::mt19937& gen) {
     while (true) {
+        if (board.GetHalfMoveClock() >= 100) {
+            return GameResult::Draw;
+        }
         std::vector<Move> moves;
         GenerateLegalMoves(board, moves);
-        if (moves.empty()) return GetGameResult(board);
+        if (moves.empty()) {
+            return GetGameResult(board);
+        }
         std::uniform_int_distribution<std::size_t> dist(0, moves.size() - 1);
         board.MakeMove(moves[dist(gen)]);
     }
-}
+}   

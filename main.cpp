@@ -9,38 +9,38 @@ int main() {
     MoveGen::Init();
 
     // アンパッサンテスト: e2-e4, e7-e5, d2-d4 のあと黒が e5xd4 ep 可能
-    Board board;
-    board.MakeMove(Move(E2, E4, PAWN));
-    board.MakeMove(Move(E7, E5, PAWN));
-    board.MakeMove(Move(D2, D4, PAWN));
-    std::cout << "After e2-e4 e7-e5 d2-d4 (Black to move):" << std::endl;
-    board.Print();
-    std::vector<Move> moves;
-    MoveGen::GenerateLegalMoves(board, moves);
-    const Move* epMove = nullptr;
-    for (const Move& m : moves)
-        if (m.from == E5 && m.to == D4 && m.pieceType == PAWN && m.capturedPiece == PAWN) {
-            epMove = &m;
-            break;
-        }
-    std::cout << "En passant e5xd4 in legal moves? " << (epMove ? "YES" : "NO") << std::endl;
-    if (!epMove) {
-        std::cout << "  Legal moves (from-to): ";
-        for (const Move& m : moves) std::cout << SquareToStr(m.from) << SquareToStr(m.to) << " ";
-        std::cout << std::endl;
-        return 1;
-    }
-    U64 hBefore = board.GetZobristHash();
-    board.MakeMove(*epMove);
-    std::cout << "After black e5xd4 (en passant):" << std::endl;
-    board.Print();
-    board.UnmakeMove(*epMove);
-    U64 hAfter = board.GetZobristHash();
-    std::cout << "After Unmake: hash restored? " << (hBefore == hAfter ? "OK" : "FAIL") << std::endl;
-    std::cout << "En passant test done." << std::endl;
-    
     // Board board;
+    // board.MakeMove(Move(E2, E4, PAWN));
+    // board.MakeMove(Move(E7, E5, PAWN));
+    // board.MakeMove(Move(D2, D4, PAWN));
+    // std::cout << "After e2-e4 e7-e5 d2-d4 (Black to move):" << std::endl;
     // board.Print();
+    // std::vector<Move> moves;
+    // MoveGen::GenerateLegalMoves(board, moves);
+    // const Move* epMove = nullptr;
+    // for (const Move& m : moves)
+    //     if (m.from == E5 && m.to == D4 && m.pieceType == PAWN && m.capturedPiece == PAWN) {
+    //         epMove = &m;
+    //         break;
+    //     }
+    // std::cout << "En passant e5xd4 in legal moves? " << (epMove ? "YES" : "NO") << std::endl;
+    // if (!epMove) {
+    //     std::cout << "  Legal moves (from-to): ";
+    //     for (const Move& m : moves) std::cout << SquareToStr(m.from) << SquareToStr(m.to) << " ";
+    //     std::cout << std::endl;
+    //     return 1;
+    // }
+    // U64 hBefore = board.GetZobristHash();
+    // board.MakeMove(*epMove);
+    // std::cout << "After black e5xd4 (en passant):" << std::endl;
+    // board.Print();
+    // board.UnmakeMove(*epMove);
+    // U64 hAfter = board.GetZobristHash();
+    // std::cout << "After Unmake: hash restored? " << (hBefore == hAfter ? "OK" : "FAIL") << std::endl;
+    // std::cout << "En passant test done." << std::endl;
+    
+    Board board;
+    board.Print();
     
     // U64 h0 = board.GetZobristHash();
     // Move e2e4(E2, E4, PAWN);
@@ -53,16 +53,16 @@ int main() {
     // Board gameBoard;
     // std::string input;
 
-    // std::mt19937 gen(std::random_device{}());
-    // int whiteWins = 0, blackWins = 0, draws = 0;
-    // for (int i = 0; i < 5; i++) {
-    //     GameResult r = MoveGen::DoRandomPlayout(board, gen);
-    //     std::cout << "  Playout " << (i + 1) << ": " << (r == GameResult::WhiteWin ? "White win" : r == GameResult::BlackWin ? "Black win" : r == GameResult::Draw ? "Draw" : "Ongoing") << std::endl;
-    //     if (r == GameResult::WhiteWin) whiteWins++;
-    //     else if (r == GameResult::BlackWin) blackWins++;
-    //     else if (r == GameResult::Draw) draws++;
-    // }
-    // std::cout << "  Summary: White=" << whiteWins << " Black=" << blackWins << " Draw=" << draws << std::endl;
+    std::mt19937 gen(std::random_device{}());
+    int whiteWins = 0, blackWins = 0, draws = 0;
+    for (int i = 0; i < 100; i++) {
+        GameResult r = MoveGen::DoRandomPlayout(board, gen);
+        std::cout << "  Playout " << (i + 1) << ": " << (r == GameResult::WhiteWin ? "White win" : r == GameResult::BlackWin ? "Black win" : r == GameResult::Draw ? "Draw" : "Ongoing") << std::endl;
+        if (r == GameResult::WhiteWin) whiteWins++;
+        else if (r == GameResult::BlackWin) blackWins++;
+        else if (r == GameResult::Draw) draws++;
+    }
+    std::cout << "  Summary: White=" << whiteWins << " Black=" << blackWins << " Draw=" << draws << std::endl;
 
     // while (true) {
     //     std::vector<Move> legalMoves;
