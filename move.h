@@ -2,6 +2,7 @@
 #define MOVE_H
 
 #include "bitboard.h"
+#include <string>
 
 enum PieceType {
     NO_PIECE = 0,
@@ -26,6 +27,9 @@ struct Move {
     Move(Square f, Square t, int pt, int cp = NO_PIECE, int pp = NO_PIECE)
         : from(f), to(t), pieceType(pt), capturedPiece(cp), promotionPiece(pp) {}
 };
+
+std::string SquareToStr(Square s);
+Square StrToSquare(const std::string& s);
 
 #endif
 
