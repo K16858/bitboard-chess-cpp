@@ -28,5 +28,10 @@
     "directory": "@PROJECT_ROOT@",
     "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/zobrist.cpp -o zobrist.o",
     "file": "@PROJECT_ROOT@/src/zobrist.cpp"
+  },
+  {
+    "directory": "@PROJECT_ROOT@",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/mcts.cpp -o mcts.o",
+    "file": "@PROJECT_ROOT@/src/mcts.cpp"
   }
 ]

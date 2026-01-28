@@ -1,5 +1,5 @@
-#ifndef MCTS_H
-#define MCTS_H
+#ifndef MCTS_HPP
+#define MCTS_HPP
 
 #include "board.hpp"
 #include "move.hpp"

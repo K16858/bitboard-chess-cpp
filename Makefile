@@ -8,7 +8,7 @@ TARGET = chess
 
 # ソースは src/、ヘッダは include/（.hpp）
 VPATH = src
-SRCS = main.cpp bitboard.cpp board.cpp movegen.cpp move.cpp zobrist.cpp
+SRCS = main.cpp bitboard.cpp board.cpp movegen.cpp move.cpp zobrist.cpp mcts.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # デフォルトターゲット
