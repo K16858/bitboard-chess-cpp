@@ -28,6 +28,8 @@ class Board {
         void SetPieceAt(Square sq, int pieceType, bool white);
     public:
         Board();
+        Board(const Board&) = default;
+        Board& operator=(const Board&) = default;
         void Print() const;
         void Update();
         void MakeMove(const Move& move);

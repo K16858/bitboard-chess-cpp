@@ -1,4 +1,5 @@
 #include "movegen.h"
+#include <algorithm>
 #include <cstdlib>
 #include <functional>
 
@@ -287,4 +288,7 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
             moves.push_back(m);
         board.UnmakeMove(m);
     }
+    std::sort(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
+        return a.from < b.from || (a.from == b.from && a.to < b.to);
+    });
 }
