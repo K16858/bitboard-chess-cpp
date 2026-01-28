@@ -2,6 +2,8 @@
 #include "movegen.h"
 #include "zobrist.h"
 #include <iostream>
+#include <sstream>
+#include <cctype>
 
 Board::Board() : whiteToMove(true), zobristHash(0), castlingRights_(0x0Fu), enPassantTarget_(-1), halfMoveClock_(0) {
     Zobrist::Init();
@@ -41,6 +43,69 @@ void Board::ComputeZobristHash() {
         else if (blackKings.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, KING, false);
     }
     if (!whiteToMove) zobristHash ^= Zobrist::GetSideKey();
+}
+
+void Board::SetFromFen(const std::string& fen) {
+    whitePawns.SetBoard(0); whiteKnights.SetBoard(0); whiteBishops.SetBoard(0);
+    whiteRooks.SetBoard(0); whiteQueens.SetBoard(0); whiteKings.SetBoard(0);
+    blackPawns.SetBoard(0); blackKnights.SetBoard(0); blackBishops.SetBoard(0);
+    blackRooks.SetBoard(0); blackQueens.SetBoard(0); blackKings.SetBoard(0);
+    std::istringstream iss(fen);
+    std::string placement, active, castling, ep, halfStr;
+    iss >> placement >> active >> castling >> ep >> halfStr;
+    std::string ranks[8];
+    size_t n = 0;
+    for (size_t i = 0, j = 0; i <= placement.size() && n < 8; i++) {
+        if (i == placement.size() || placement[i] == '/') {
+            ranks[n++] = placement.substr(j, i - j);
+            j = i + 1;
+        }
+    }
+    for (int r = 0; r < 8 && r < static_cast<int>(n); r++) {
+        int rankIdx = 7 - r;
+        int file = 0;
+        for (char c : ranks[r]) {
+            if (file >= 8) break;
+            if (std::isdigit(static_cast<unsigned char>(c))) {
+                file += (c - '0');
+                continue;
+            }
+            bool white = (std::isupper(static_cast<unsigned char>(c)) != 0);
+            int pt = NO_PIECE;
+            switch (std::tolower(static_cast<unsigned char>(c))) {
+                case 'p': pt = PAWN; break;
+                case 'n': pt = KNIGHT; break;
+                case 'b': pt = BISHOP; break;
+                case 'r': pt = ROOK; break;
+                case 'q': pt = QUEEN; break;
+                case 'k': pt = KING; break;
+                default: break;
+            }
+            if (pt != NO_PIECE)
+                SetPieceAt(static_cast<Square>(rankIdx * 8 + file), pt, white);
+            file++;
+        }
+    }
+    whiteToMove = (active.empty() || active[0] == 'w');
+    castlingRights_ = 0;
+    if (castling != "-") {
+        for (char c : castling) {
+            if (c == 'K') castlingRights_ |= 1u;
+            else if (c == 'Q') castlingRights_ |= 2u;
+            else if (c == 'k') castlingRights_ |= 4u;
+            else if (c == 'q') castlingRights_ |= 8u;
+        }
+    }
+    enPassantTarget_ = (ep == "-" || ep.empty()) ? -1 : static_cast<int>(StrToSquare(ep));
+    halfMoveClock_ = 0;
+    if (!halfStr.empty()) {
+        int v = 0;
+        for (char c : halfStr) { if (std::isdigit(static_cast<unsigned char>(c))) v = v * 10 + (c - '0'); else break; }
+        halfMoveClock_ = v;
+    }
+    undoStack_.clear();
+    Update();
+    ComputeZobristHash();
 }
 
 void Board::Update() {

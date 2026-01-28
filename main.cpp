@@ -41,6 +41,8 @@ int main() {
     
     Board board;
     board.Print();
+    board.SetFromFen("b2r1r2/4nk2/p1q1p1p1/1p3pP1/3P1P2/P1N1B2R/1P2Q3/5RK1 w - - 0 31");
+    board.Print();
     
     // U64 h0 = board.GetZobristHash();
     // Move e2e4(E2, E4, PAWN);

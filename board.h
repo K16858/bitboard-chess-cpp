@@ -5,6 +5,7 @@
 #include "move.h"
 #include "zobrist.h"
 #include <cstdint>
+#include <string>
 #include <vector>
 
 struct BoardUndoState {
@@ -47,6 +48,7 @@ class Board {
         Board& operator=(const Board&) = default;
         void Print() const;
         void Update();
+        void SetFromFen(const std::string& fen);
         void MakeMove(const Move& move);
         void UnmakeMove(const Move& move);
         
