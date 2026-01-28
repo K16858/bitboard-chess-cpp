@@ -1,5 +1,5 @@
-#ifndef ZOBRIST_H
-#define ZOBRIST_H
+#ifndef ZOBRIST_HPP
+#define ZOBRIST_HPP
 
 #include "bitboard.hpp"
 

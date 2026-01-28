@@ -1,5 +1,5 @@
-#ifndef BITBOARD_H
-#define BITBOARD_H
+#ifndef BITBOARD_HPP
+#define BITBOARD_HPP
 
 #include <cstdint>
 
