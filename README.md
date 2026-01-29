@@ -12,7 +12,7 @@ make deps     # pybind11 を extern/ に取得（初回のみ）
 
 ## 使い方
 
-- **C++**: `./chess` で対局デモ（main の `#if 1` で人間 vs MCTS AI）
+- **C++**: `./chess` で対局デモ
 - **Python**: `make python` 後、`import chess_engine` → `chess_engine.init()` → `Board()` / `run_mcts()` / `fen()` など
 
 ```python
