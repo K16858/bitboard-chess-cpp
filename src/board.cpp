@@ -180,23 +180,23 @@ int Board::GetPieceAt(Square square) const {
 
 bool Board::IsSquareAttacked(Square square, bool byWhite) const {
     U64 sqBit = 1ULL << square;
-    
+    U64 occupancy = GetAllPieces();
     if (byWhite) {
         for (int sq = 0; sq < 64; sq++) {
             if (whitePawns.GetBit((Square)sq) && (MoveGen::GetPawnCaptures((Square)sq, true) & sqBit)) return true;
             if (whiteKnights.GetBit((Square)sq) && (MoveGen::GetKnightMoves((Square)sq) & sqBit)) return true;
-            if (whiteBishops.GetBit((Square)sq) && (MoveGen::GetBishopMoves((Square)sq) & sqBit)) return true;
-            if (whiteRooks.GetBit((Square)sq) && (MoveGen::GetRookMoves((Square)sq) & sqBit)) return true;
-            if (whiteQueens.GetBit((Square)sq) && (MoveGen::GetQueenMoves((Square)sq) & sqBit)) return true;
+            if (whiteBishops.GetBit((Square)sq) && (MoveGen::GetBishopMoves((Square)sq, occupancy) & sqBit)) return true;
+            if (whiteRooks.GetBit((Square)sq) && (MoveGen::GetRookMoves((Square)sq, occupancy) & sqBit)) return true;
+            if (whiteQueens.GetBit((Square)sq) && (MoveGen::GetQueenMoves((Square)sq, occupancy) & sqBit)) return true;
             if (whiteKings.GetBit((Square)sq) && (MoveGen::GetKingMoves((Square)sq) & sqBit)) return true;
         }
     } else {
         for (int sq = 0; sq < 64; sq++) {
             if (blackPawns.GetBit((Square)sq) && (MoveGen::GetPawnCaptures((Square)sq, false) & sqBit)) return true;
             if (blackKnights.GetBit((Square)sq) && (MoveGen::GetKnightMoves((Square)sq) & sqBit)) return true;
-            if (blackBishops.GetBit((Square)sq) && (MoveGen::GetBishopMoves((Square)sq) & sqBit)) return true;
-            if (blackRooks.GetBit((Square)sq) && (MoveGen::GetRookMoves((Square)sq) & sqBit)) return true;
-            if (blackQueens.GetBit((Square)sq) && (MoveGen::GetQueenMoves((Square)sq) & sqBit)) return true;
+            if (blackBishops.GetBit((Square)sq) && (MoveGen::GetBishopMoves((Square)sq, occupancy) & sqBit)) return true;
+            if (blackRooks.GetBit((Square)sq) && (MoveGen::GetRookMoves((Square)sq, occupancy) & sqBit)) return true;
+            if (blackQueens.GetBit((Square)sq) && (MoveGen::GetQueenMoves((Square)sq, occupancy) & sqBit)) return true;
             if (blackKings.GetBit((Square)sq) && (MoveGen::GetKingMoves((Square)sq) & sqBit)) return true;
         }
     }
