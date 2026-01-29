@@ -82,9 +82,9 @@ int main() {
     const int mctsIterations = 2000;
     std::cout << "--- Human (White) vs MCTS AI (Black). Input moves as e2e4, quit to exit ---\n";
     while (true) {
+        gameBoard.Print();
         std::vector<Move> legalMoves;
         MoveGen::GenerateLegalMoves(gameBoard, legalMoves);
-        gameBoard.Print();
         if (legalMoves.empty()) {
             if (gameBoard.IsInCheck(gameBoard.GetWhiteToMove()))
                 std::cout << "Checkmate. " << (gameBoard.GetWhiteToMove() ? "Black" : "White") << " wins.\n";
