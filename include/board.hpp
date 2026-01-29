@@ -48,6 +48,7 @@ class Board {
         void Print() const;
         void Update();
         void SetFromFen(const std::string& fen);
+        std::string GetFen() const;
         void MakeMove(const Move& move);
         void UnmakeMove(const Move& move);
         
