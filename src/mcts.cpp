@@ -22,6 +22,11 @@ namespace {
 }
 
 MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen) {
+    return RunMCTS(rootBoard, iterations, gen, MCTSOptions{});
+}
+
+MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, const MCTSOptions& options) {
+    (void)options;
     MCTSResult out;
     out.rootValue = 0.0;
     out.rootVisits = 0;
@@ -31,6 +36,7 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen) {
     root->parent = nullptr;
     root->N = 0;
     root->W = 0.0;
+    root->P = 0.0;
     bool rootWhite = rootBoard.GetWhiteToMove();
 
     for (int iter = 0; iter < iterations; iter++) {
@@ -49,12 +55,14 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen) {
                     }
                     break;
                 }
+                const double uniformP = 1.0 / static_cast<double>(moves.size());
                 for (const Move& m : moves) {
                     MCTSNode* c = new MCTSNode();
                     c->move_from_parent = m;
                     c->parent = node;
                     c->N = 0;
                     c->W = 0.0;
+                    c->P = uniformP;
                     node->children.push_back(c);
                 }
                 std::uniform_int_distribution<std::size_t> dist(0, node->children.size() - 1);
@@ -99,7 +107,11 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen) {
 }
 
 Move GetBestMoveMCTS(const Board& root, int iterations, std::mt19937& gen) {
-    MCTSResult res = RunMCTS(root, iterations, gen);
+    return GetBestMoveMCTS(root, iterations, gen, MCTSOptions{});
+}
+
+Move GetBestMoveMCTS(const Board& root, int iterations, std::mt19937& gen, const MCTSOptions& options) {
+    MCTSResult res = RunMCTS(root, iterations, gen, options);
     if (res.visits.empty()) return Move();
     const auto* best = &res.visits[0];
     for (const auto& p : res.visits)
