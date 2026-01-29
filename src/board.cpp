@@ -108,6 +108,43 @@ void Board::SetFromFen(const std::string& fen) {
     ComputeZobristHash();
 }
 
+std::string Board::GetFen() const {
+    std::ostringstream oss;
+    for (int r = 7; r >= 0; r--) {
+        int empty = 0;
+        for (int f = 0; f < 8; f++) {
+            Square sq = static_cast<Square>(r * 8 + f);
+            if (whitePawns.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'P'; }
+            else if (whiteKnights.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'N'; }
+            else if (whiteBishops.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'B'; }
+            else if (whiteRooks.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'R'; }
+            else if (whiteQueens.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'Q'; }
+            else if (whiteKings.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'K'; }
+            else if (blackPawns.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'p'; }
+            else if (blackKnights.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'n'; }
+            else if (blackBishops.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'b'; }
+            else if (blackRooks.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'r'; }
+            else if (blackQueens.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'q'; }
+            else if (blackKings.GetBit(sq)) { if (empty) { oss << empty; empty = 0; } oss << 'k'; }
+            else empty++;
+        }
+        if (empty) oss << empty;
+        if (r > 0) oss << '/';
+    }
+    oss << (whiteToMove ? " w " : " b ");
+    if (castlingRights_ == 0) oss << '-';
+    else {
+        if (castlingRights_ & 1u) oss << 'K';
+        if (castlingRights_ & 2u) oss << 'Q';
+        if (castlingRights_ & 4u) oss << 'k';
+        if (castlingRights_ & 8u) oss << 'q';
+    }
+    oss << ' ';
+    oss << (enPassantTarget_ >= 0 ? SquareToStr(static_cast<Square>(enPassantTarget_)) : "-");
+    oss << ' ' << halfMoveClock_ << " 1";
+    return oss.str();
+}
+
 void Board::Update() {
     allWhitePieces.SetBoard(
         whitePawns.GetBoard() | 
