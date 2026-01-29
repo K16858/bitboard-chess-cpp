@@ -1,5 +1,5 @@
-#ifndef MOVEGEN_H
-#define MOVEGEN_H
+#ifndef MOVEGEN_HPP
+#define MOVEGEN_HPP
 
 #include "board.hpp"
 #include <functional>
