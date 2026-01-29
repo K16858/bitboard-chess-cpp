@@ -1,8 +1,10 @@
 #include "board.hpp"
 #include "movegen.hpp"
 #include "move.hpp"
+#include "mcts.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <random>
 #include <stdexcept>
 
 namespace py = pybind11;
@@ -74,6 +76,16 @@ PYBIND11_MODULE(chess_engine, m) {
     m.doc() = "Chess engine with MCTS (pybind11 binding)";
 
     m.def("init", &MoveGen::Init, "Initialize move generator tables. Call once before using Board or run_mcts.");
+
+    m.def("run_mcts", [](BoardWrapper& bw, int iterations, unsigned int seed) {
+        std::mt19937 gen(seed);
+        MCTSResult res = RunMCTS(bw.board_, iterations, gen);
+        std::vector<int> visits;
+        visits.reserve(res.visits.size());
+        for (const auto& p : res.visits) visits.push_back(p.second);
+        return py::make_tuple(visits, res.rootValue, res.rootVisits);
+    }, py::arg("board"), py::arg("iterations"), py::arg("seed"),
+       "Run MCTS on board. Returns (visits, root_value, root_visits). visits[i] matches legal_moves()[i].");
 
     py::class_<BoardWrapper>(m, "Board")
         .def(py::init([](py::object fen) {
