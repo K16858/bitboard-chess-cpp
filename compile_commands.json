@@ -28,5 +28,15 @@
     "directory": "/home/kemo/bitboard-chess-cpp",
     "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/zobrist.cpp -o zobrist.o",
     "file": "/home/kemo/bitboard-chess-cpp/src/zobrist.cpp"
+  },
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -I include -c src/mcts.cpp -o mcts.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/mcts.cpp"
+  },
+  {
+    "directory": "/home/kemo/bitboard-chess-cpp",
+    "command": "g++ -std=c++17 -Wall -Wextra -O2 -fPIC -I include -I extern/pybind11/include -I/usr/include/python3.12 -I/usr/include/python3.12 -I/usr/include/python3.12 -I/usr/include/python3.12 -c src/python_bindings.cpp -o build/python/python_bindings.o",
+    "file": "/home/kemo/bitboard-chess-cpp/src/python_bindings.cpp"
   }
 ]
