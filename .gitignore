@@ -3,3 +3,5 @@ chess
 *.o
 notes/
 .cache/
+build/
+chess_engine*.so
