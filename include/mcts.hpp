@@ -24,4 +24,7 @@ struct MCTSResult {
 
 MCTSResult RunMCTS(const Board& root, int iterations, std::mt19937& gen);
 
+/// MCTS で最善手を1手返す（訪問数が最大の手）。合法手がない場合は未使用の Move を返す。
+Move GetBestMoveMCTS(const Board& root, int iterations, std::mt19937& gen);
+
 #endif

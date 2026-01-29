@@ -97,3 +97,12 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen) {
     deleteTree(root);
     return out;
 }
+
+Move GetBestMoveMCTS(const Board& root, int iterations, std::mt19937& gen) {
+    MCTSResult res = RunMCTS(root, iterations, gen);
+    if (res.visits.empty()) return Move();
+    const auto* best = &res.visits[0];
+    for (const auto& p : res.visits)
+        if (p.second > best->second) best = &p;
+    return best->first;
+}
