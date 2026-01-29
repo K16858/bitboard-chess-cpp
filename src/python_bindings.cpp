@@ -70,6 +70,8 @@ struct BoardWrapper {
     }
 
     bool white_to_move() const { return board_.GetWhiteToMove(); }
+
+    std::string fen() const { return board_.GetFen(); }
 };
 
 PYBIND11_MODULE(chess_engine, m) {
@@ -98,5 +100,6 @@ PYBIND11_MODULE(chess_engine, m) {
         .def("push", &BoardWrapper::push, py::arg("uci"))
         .def("pop", &BoardWrapper::pop)
         .def("result", &BoardWrapper::result)
-        .def_property_readonly("white_to_move", &BoardWrapper::white_to_move);
+        .def_property_readonly("white_to_move", &BoardWrapper::white_to_move)
+        .def("fen", &BoardWrapper::fen);
 }
