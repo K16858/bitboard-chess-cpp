@@ -79,15 +79,36 @@ PYBIND11_MODULE(chess_engine, m) {
 
     m.def("init", &MoveGen::Init, "Initialize move generator tables. Call once before using Board or run_mcts.");
 
-    m.def("run_mcts", [](BoardWrapper& bw, int iterations, unsigned int seed) {
+    m.def("run_mcts", [](BoardWrapper& bw, int iterations, unsigned int seed,
+                         py::object prior, py::object value) {
         std::mt19937 gen(seed);
-        MCTSResult res = RunMCTS(bw.board_, iterations, gen);
+        MCTSOptions opts;
+        if (!prior.is_none() && py::hasattr(prior, "__call__")) {
+            opts.prior_fn = [prior](const Board& board, const std::vector<Move>& moves) {
+                py::gil_scoped_acquire acquire;
+                std::string fen = board.GetFen();
+                std::vector<std::string> uci;
+                uci.reserve(moves.size());
+                for (const Move& m : moves) uci.push_back(move_to_uci(m));
+                py::object result = prior(py::cast(fen), py::cast(uci));
+                return result.cast<std::vector<double>>();
+            };
+        }
+        if (!value.is_none() && py::hasattr(value, "__call__")) {
+            opts.value_fn = [value](const Board& board) {
+                py::gil_scoped_acquire acquire;
+                py::object result = value(py::cast(board.GetFen()));
+                return result.cast<double>();
+            };
+        }
+        MCTSResult res = RunMCTS(bw.board_, iterations, gen, opts);
         std::vector<int> visits;
         visits.reserve(res.visits.size());
         for (const auto& p : res.visits) visits.push_back(p.second);
         return py::make_tuple(visits, res.rootValue, res.rootVisits);
     }, py::arg("board"), py::arg("iterations"), py::arg("seed"),
-       "Run MCTS on board. Returns (visits, root_value, root_visits). visits[i] matches legal_moves()[i].");
+       py::arg("prior") = py::none(), py::arg("value") = py::none(),
+       "Run MCTS on board. prior(fen, uci_list)->list[float], value(fen)->float. Returns (visits, root_value, root_visits).");
 
     py::class_<BoardWrapper>(m, "Board")
         .def(py::init([](py::object fen) {
