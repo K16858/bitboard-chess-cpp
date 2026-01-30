@@ -4,8 +4,6 @@
 #include <random>
 
 namespace {
-    const double UCB_C = 1.4142135623730950488;  // sqrt(2)
-
     static double resultToValue(GameResult r, bool rootWhite) {
         if (r == GameResult::Draw) return 0.0;
         if (r == GameResult::WhiteWin) return rootWhite ? 1.0 : -1.0;
@@ -26,7 +24,7 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen) {
 }
 
 MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, const MCTSOptions& options) {
-    (void)options;
+    const double c_puct = options.c_puct;
     MCTSResult out;
     out.rootValue = 0.0;
     out.rootVisits = 0;
@@ -55,37 +53,65 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                     }
                     break;
                 }
+                std::vector<double> priors;
+                if (options.prior_fn) {
+                    priors = options.prior_fn(board, moves);
+                    if (priors.size() != moves.size()) priors.clear();
+                }
+                double sumP = 0.0;
+                if (!priors.empty()) {
+                    for (double x : priors) sumP += (x > 0.0 ? x : 0.0);
+                }
                 const double uniformP = 1.0 / static_cast<double>(moves.size());
-                for (const Move& m : moves) {
+                for (std::size_t i = 0; i < moves.size(); i++) {
                     MCTSNode* c = new MCTSNode();
-                    c->move_from_parent = m;
+                    c->move_from_parent = moves[i];
                     c->parent = node;
                     c->N = 0;
                     c->W = 0.0;
-                    c->P = uniformP;
+                    if (sumP > 0.0 && i < priors.size() && priors[i] > 0.0)
+                        c->P = priors[i] / sumP;
+                    else
+                        c->P = uniformP;
                     node->children.push_back(c);
                 }
-                std::uniform_int_distribution<std::size_t> dist(0, node->children.size() - 1);
-                std::size_t idx = dist(gen);
-                MCTSNode* leaf = node->children[idx];
-                board.MakeMove(leaf->move_from_parent);
-                double value = resultToValue(MoveGen::DoRandomPlayout(board, gen), rootWhite);
-                for (MCTSNode* p = leaf; p != nullptr; p = p->parent) {
+                // value: value_fn があればそれ、なければ DoRandomPlayout
+                double value;
+                if (options.value_fn) {
+                    value = options.value_fn(board);
+                } else {
+                    value = resultToValue(MoveGen::DoRandomPlayout(board, gen), rootWhite);
+                }
+                for (MCTSNode* p = node; p != nullptr; p = p->parent) {
                     p->N++;
                     p->W += value;
                 }
-                break;
+                // P を使った UCB で子を 1 つ選び、その子へ降りる（break しない）
+                MCTSNode* best = nullptr;
+                double bestScore = -1e99;
+                int parentN = node->N;
+                for (MCTSNode* c : node->children) {
+                    double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / (1.0 + c->N);
+                    if (c->N > 0)
+                        score += c->W / c->N;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        best = c;
+                    }
+                }
+                if (!best) break;
+                board.MakeMove(best->move_from_parent);
+                node = best;
+                continue;
             }
 
             MCTSNode* best = nullptr;
             double bestScore = -1e99;
             int parentN = node->N;
             for (MCTSNode* c : node->children) {
-                double score;
-                if (c->N == 0)
-                    score = 1e99;
-                else
-                    score = c->W / c->N + UCB_C * std::sqrt(std::log(static_cast<double>(parentN + 1)) / c->N);
+                double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / (1.0 + c->N);
+                if (c->N > 0)
+                    score += c->W / c->N;
                 if (score > bestScore) {
                     bestScore = score;
                     best = c;
