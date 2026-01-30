@@ -75,18 +75,6 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                         c->P = uniformP;
                     node->children.push_back(c);
                 }
-                // value: value_fn があればそれ、なければ DoRandomPlayout
-                double value;
-                if (options.value_fn) {
-                    value = options.value_fn(board);
-                } else {
-                    value = resultToValue(MoveGen::DoRandomPlayout(board, gen), rootWhite);
-                }
-                for (MCTSNode* p = node; p != nullptr; p = p->parent) {
-                    p->N++;
-                    p->W += value;
-                }
-                // P を使った UCB で子を 1 つ選び、その子へ降りる（break しない）
                 MCTSNode* best = nullptr;
                 double bestScore = -1e99;
                 int parentN = node->N;
@@ -101,8 +89,17 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                 }
                 if (!best) break;
                 board.MakeMove(best->move_from_parent);
-                node = best;
-                continue;
+                double value;
+                if (options.value_fn) {
+                    value = options.value_fn(board);
+                } else {
+                    value = resultToValue(MoveGen::DoRandomPlayout(board, gen), rootWhite);
+                }
+                for (MCTSNode* p = best; p != nullptr; p = p->parent) {
+                    p->N++;
+                    p->W += value;
+                }
+                break;
             }
 
             MCTSNode* best = nullptr;
