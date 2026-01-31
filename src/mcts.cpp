@@ -95,9 +95,11 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                 } else {
                     value = resultToValue(MoveGen::DoRandomPlayout(board, gen), rootWhite);
                 }
+                double sign = 1.0;
                 for (MCTSNode* p = best; p != nullptr; p = p->parent) {
                     p->N++;
-                    p->W += value;
+                    p->W += sign * value;
+                    sign = -sign;
                 }
                 break;
             }
