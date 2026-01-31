@@ -317,6 +317,8 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
         }
     }
     for (const Move& m : pseudoLegal) {
+        if (m.capturedPiece == KING)
+            continue;  // capturing the king is never legal
         board.MakeMove(m);
         if (!board.IsInCheck(wtm))
             moves.push_back(m);

@@ -28,11 +28,15 @@ debug: clean $(TARGET)
 
 # クリーンアップ
 clean: clean-python
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) test_game_result
 
 # 実行
 run: $(TARGET)
 	./$(TARGET)
+
+# チェックメイト局面で GetGameResult/GenerateLegalMoves のテスト
+test_game_result: $(OBJS)
+	$(CXX) $(CXXFLAGS) -o test_game_result tests/test_game_result.cpp bitboard.o board.o movegen.o move.o zobrist.o
 
 # すべてクリーンして再ビルド
 rebuild: clean all
@@ -72,5 +76,5 @@ deps:
 	if python3 -m pip install --target extern pybind11 2>/dev/null; then echo "pybind11 installed via pip"; exit 0; fi; \
 	curl -sL https://github.com/pybind/pybind11/archive/refs/tags/v2.11.1.tar.gz | tar xz -C extern && mv extern/pybind11-2.11.1 extern/pybind11 && echo "pybind11 fetched via curl"
 
-.PHONY: all clean clean-python run debug rebuild compile_commands python deps
+.PHONY: all clean clean-python run debug rebuild compile_commands python deps test_game_result
 
