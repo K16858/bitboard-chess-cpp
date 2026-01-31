@@ -316,13 +316,18 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
             }
         }
     }
+    struct UnmakeGuard {
+        Board* b;
+        const Move* m;
+        ~UnmakeGuard() { if (b && m) b->UnmakeMove(*m); }
+    };
     for (const Move& m : pseudoLegal) {
         if (m.capturedPiece == KING)
             continue;  // capturing the king is never legal
         board.MakeMove(m);
+        UnmakeGuard guard{&board, &m};
         if (!board.IsInCheck(wtm))
             moves.push_back(m);
-        board.UnmakeMove(m);
     }
     std::sort(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
         return a.from < b.from
