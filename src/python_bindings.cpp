@@ -102,13 +102,18 @@ PYBIND11_MODULE(chess_engine, m) {
             };
         }
         MCTSResult res = RunMCTS(bw.board_, iterations, gen, opts);
+        std::vector<std::string> uci_list;
         std::vector<int> visits;
+        uci_list.reserve(res.visits.size());
         visits.reserve(res.visits.size());
-        for (const auto& p : res.visits) visits.push_back(p.second);
-        return py::make_tuple(visits, res.rootValue, res.rootVisits);
+        for (const auto& p : res.visits) {
+            uci_list.push_back(move_to_uci(p.first));
+            visits.push_back(p.second);
+        }
+        return py::make_tuple(uci_list, visits, res.rootValue, res.rootVisits);
     }, py::arg("board"), py::arg("iterations"), py::arg("seed"),
        py::arg("prior") = py::none(), py::arg("value") = py::none(),
-       "Run MCTS on board. prior(fen, uci_list)->list[float], value(fen)->float. Returns (visits, root_value, root_visits).");
+       "Run MCTS on board. prior(fen, uci_list)->list[float], value(fen)->float. Returns (uci_list, visits, root_value, root_visits). uci_list[i] and visits[i] are paired.");
 
     py::class_<BoardWrapper>(m, "Board")
         .def(py::init([](py::object fen) {

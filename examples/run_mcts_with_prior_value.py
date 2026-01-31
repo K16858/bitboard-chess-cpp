@@ -17,9 +17,9 @@ def uniform_prior(fen, uci_list):
 def const_value(fen):
     return 0.0
 
-visits, root_value, root_visits = chess_engine.run_mcts(
+uci_list, visits, root_value, root_visits = chess_engine.run_mcts(
     b, 100, 42, prior=uniform_prior, value=const_value
 )
 print("prior=uniform, value=0: root_visits=", root_visits, "root_value=", root_value)
-print("visits len:", len(visits), "(matches legal_moves)")
+print("uci_list[i] and visits[i] paired:", len(uci_list), "moves, e.g.", list(zip(uci_list[:3], visits[:3])))
 print("ok")

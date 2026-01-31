@@ -19,7 +19,7 @@ make deps     # pybind11 を extern/ に取得（初回のみ）
 import chess_engine
 chess_engine.init()
 b = chess_engine.Board()
-visits, value, n = chess_engine.run_mcts(b, 500, 42)
+uci_list, visits, value, n = chess_engine.run_mcts(b, 500, 42)  # uci_list[i] と visits[i] が対応
 ```
 
 詳細は [docs/](docs/) を参照。
