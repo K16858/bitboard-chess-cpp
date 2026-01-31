@@ -364,8 +364,11 @@ void Board::MakeMove(const Move& move) {
 
 void Board::UnmakeMove(const Move& move) {
     whiteToMove = !whiteToMove;
+    // 反転後: whiteToMove == 戻した手を指した側（mover）。駒の復元は mover=wtm, 取った駒=!wtm
     bool wtm = whiteToMove;
-    bool enPassant = (move.pieceType == PAWN && move.capturedPiece == PAWN);
+    // En passant: pawn capture where the pawn landed on the ep rank (rank 3 or 6); otherwise capSq == move.to
+    bool enPassant = (move.pieceType == PAWN && move.capturedPiece == PAWN &&
+                      (static_cast<int>(move.to) / 8 == 2 || static_cast<int>(move.to) / 8 == 5));
     Square capSq = move.to;
     if (enPassant)
         capSq = wtm ? static_cast<Square>(static_cast<int>(move.to) - 8) : static_cast<Square>(static_cast<int>(move.to) + 8);
