@@ -72,6 +72,8 @@ struct BoardWrapper {
     bool white_to_move() const { return board_.GetWhiteToMove(); }
 
     std::string fen() const { return board_.GetFen(); }
+
+    U64 get_zobrist_hash() const { return board_.GetZobristHash(); }
 };
 
 PYBIND11_MODULE(chess_engine, m) {
@@ -127,5 +129,6 @@ PYBIND11_MODULE(chess_engine, m) {
         .def("pop", &BoardWrapper::pop)
         .def("result", &BoardWrapper::result)
         .def_property_readonly("white_to_move", &BoardWrapper::white_to_move)
-        .def("fen", &BoardWrapper::fen);
+        .def("fen", &BoardWrapper::fen)
+        .def("get_zobrist_hash", &BoardWrapper::get_zobrist_hash, "Return the Zobrist hash of the current position (64-bit unsigned).");
 }

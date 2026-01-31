@@ -19,6 +19,7 @@
 - `chess_engine.init()` — 1 回だけ呼ぶ（MoveGen 初期化）
 - `chess_engine.Board(fen=None)` — 局面。`fen` 省略時は初期局面
 - `board.set_fen(fen)` / `board.fen()` — FEN の設定・取得
+- `board.get_zobrist_hash()` — 現在局面の Zobrist ハッシュ（64 ビット符号なし、Python では int）
 - `board.legal_moves()` — 合法手の UCI 文字列リスト（順序固定）
 - `board.push(uci)` / `board.pop()` — 1 手進める・戻す
 - `board.result()` — 1=白勝ち, -1=黒勝ち, 0=引き分け, 2=進行中
