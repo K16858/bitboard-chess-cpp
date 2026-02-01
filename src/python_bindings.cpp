@@ -83,10 +83,13 @@ PYBIND11_MODULE(chess_engine, m) {
 
     m.def("run_mcts", [](BoardWrapper& bw, int iterations, unsigned int seed,
                          py::object prior, py::object value,
-                         py::object batch_prior, py::object batch_value, int batch_size) {
+                         py::object batch_prior, py::object batch_value, int batch_size,
+                         double dirichlet_alpha, double dirichlet_epsilon) {
         std::mt19937 gen(seed);
         MCTSOptions opts;
         opts.batch_size = std::max(1, std::min(batch_size, 1024));
+        opts.dirichlet_alpha = dirichlet_alpha;
+        opts.dirichlet_epsilon = dirichlet_epsilon;
 
         bool use_batch = (!batch_prior.is_none() && py::hasattr(batch_prior, "__call__") &&
                          !batch_value.is_none() && py::hasattr(batch_value, "__call__"));
@@ -147,8 +150,9 @@ PYBIND11_MODULE(chess_engine, m) {
     }, py::arg("board"), py::arg("iterations"), py::arg("seed"),
        py::arg("prior") = py::none(), py::arg("value") = py::none(),
        py::arg("batch_prior") = py::none(), py::arg("batch_value") = py::none(), py::arg("batch_size") = 32,
+       py::arg("dirichlet_alpha") = 0.0, py::arg("dirichlet_epsilon") = 0.25,
        "Run MCTS. Use batch_prior/batch_value for batched NN inference (fewer Python calls). "
-       "batch_prior(fen_list, uci_list_per_fen)->list[list[float]], batch_value(fen_list)->list[float]. "
+       "dirichlet_alpha>0 adds Dirichlet noise at root (e.g. 0.3); dirichlet_epsilon mixes with prior (e.g. 0.25). "
        "Returns (uci_list, visits, root_value, root_visits).");
 
     py::class_<BoardWrapper>(m, "Board")

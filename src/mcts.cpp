@@ -9,6 +9,31 @@
 #include <vector>
 
 namespace {
+    /// ルート用: prior にディリクレノイズを混合。alpha<=0 のときは prior をそのまま返す。
+    void applyDirichletToPriors(std::vector<double>& priors, double alpha, double epsilon, std::mt19937& gen) {
+        if (alpha <= 0.0 || priors.empty()) return;
+        const std::size_t K = priors.size();
+        std::gamma_distribution<double> gamma(alpha, 1.0);
+        std::vector<double> noise(K);
+        double sumN = 0.0;
+        for (std::size_t i = 0; i < K; i++) {
+            noise[i] = std::max(gamma(gen), 1e-10);
+            sumN += noise[i];
+        }
+        if (sumN <= 0.0) return;
+        double sumP = 0.0;
+        for (std::size_t i = 0; i < K; i++) {
+            noise[i] /= sumN;
+            priors[i] = (1.0 - epsilon) * priors[i] + epsilon * noise[i];
+            if (priors[i] > 0.0) sumP += priors[i];
+        }
+        if (sumP <= 0.0) return;
+        for (std::size_t i = 0; i < K; i++)
+            priors[i] /= sumP;
+    }
+}
+
+namespace {
     static double resultToValue(GameResult r, bool rootWhite) {
         if (r == GameResult::Draw) return 0.0;
         if (r == GameResult::WhiteWin) return rootWhite ? 1.0 : -1.0;
@@ -57,7 +82,7 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen) {
     return RunMCTS(rootBoard, iterations, gen, MCTSOptions{});
 }
 
-static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, const MCTSOptions& options);
+static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19937& gen, const MCTSOptions& options);
 
 MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, const MCTSOptions& options) {
     MCTSResult out;
@@ -66,7 +91,7 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
     if (iterations <= 0) return out;
 
     if (options.batch_prior_fn && options.batch_value_fn) {
-        return RunMCTSBatch(rootBoard, iterations, options);
+        return RunMCTSBatch(rootBoard, iterations, gen, options);
     }
 
     const double c_puct = options.c_puct;
@@ -103,16 +128,23 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                     for (double x : priors) sumP += (x > 0.0 ? x : 0.0);
                 }
                 const double uniformP = 1.0 / static_cast<double>(moves.size());
+                std::vector<double> p(moves.size());
+                for (std::size_t i = 0; i < moves.size(); i++) {
+                    if (sumP > 0.0 && i < priors.size() && priors[i] > 0.0)
+                        p[i] = priors[i] / sumP;
+                    else
+                        p[i] = uniformP;
+                }
+                const bool isRoot = (node->parent == nullptr);
+                if (isRoot && options.dirichlet_alpha > 0.0)
+                    applyDirichletToPriors(p, options.dirichlet_alpha, options.dirichlet_epsilon, gen);
                 for (std::size_t i = 0; i < moves.size(); i++) {
                     MCTSNode* c = new MCTSNode();
                     c->move_from_parent = moves[i];
                     c->parent = node;
                     c->N = 0;
                     c->W = 0.0;
-                    if (sumP > 0.0 && i < priors.size() && priors[i] > 0.0)
-                        c->P = priors[i] / sumP;
-                    else
-                        c->P = uniformP;
+                    c->P = p[i];
                     node->children.push_back(c);
                 }
                 MCTSNode* best = nullptr;
@@ -171,7 +203,7 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
     return out;
 }
 
-static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, const MCTSOptions& options) {
+static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19937& gen, const MCTSOptions& options) {
     const double c_puct = options.c_puct;
     const int W = std::max(1, std::min(options.batch_size, 1024));
     const bool rootWhite = rootBoard.GetWhiteToMove();
@@ -221,6 +253,16 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, const MCT
                     for (double x : priors) sumP += (x > 0.0 ? x : 0.0);
                 }
                 const double uniformP = 1.0 / static_cast<double>(moves.size());
+                std::vector<double> p(moves.size());
+                for (std::size_t i = 0; i < moves.size(); i++) {
+                    if (sumP > 0.0 && i < priors.size() && priors[i] > 0.0)
+                        p[i] = priors[i] / sumP;
+                    else
+                        p[i] = uniformP;
+                }
+                const bool isRootForFen = (nodesAndMoves.front().first->parent == nullptr);
+                if (isRootForFen && options.dirichlet_alpha > 0.0)
+                    applyDirichletToPriors(p, options.dirichlet_alpha, options.dirichlet_epsilon, gen);
 
                 std::set<MCTSNode*> expanded;
                 for (const auto& np : nodesAndMoves) {
@@ -234,10 +276,7 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, const MCT
                         c->parent = node;
                         c->N = 0;
                         c->W = 0.0;
-                        if (sumP > 0.0 && i < priors.size() && priors[i] > 0.0)
-                            c->P = priors[i] / sumP;
-                        else
-                            c->P = uniformP;
+                        c->P = p[i];
                         node->children.push_back(c);
                     }
                 }

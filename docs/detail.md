@@ -24,11 +24,12 @@
 - `board.push(uci)` / `board.pop()` — 1 手進める・戻す
 - `board.result()` — 1=白勝ち, -1=黒勝ち, 0=引き分け, 2=進行中
 - `board.white_to_move` — 手番（プロパティ）
-- `chess_engine.run_mcts(board, iterations, seed, prior=None, value=None)` — MCTS 実行。戻り値 `(uci_list, visits, root_value, root_visits)`。`uci_list[i]` と `visits[i]` が対応（手の UCI と訪問数のペア）。
-  - `prior`: callable なら `prior(fen, uci_list) -> list[float]`。fen は局面 FEN、uci_list は合法手 UCI リスト（`legal_moves()` と同じ順）。返り値の i 番目が i 番目の手の prior（正規化は C++ 側で行う）。
-  - `value`: callable なら `value(fen) -> float`。fen は評価する局面の FEN。root 手番から見た値で [-1, 1] を返す想定。
+- `chess_engine.run_mcts(board, iterations, seed, prior=None, value=None, batch_prior=None, batch_value=None, batch_size=32)` — MCTS 実行。戻り値 `(uci_list, visits, root_value, root_visits)`。`uci_list[i]` と `visits[i]` が対応（手の UCI と訪問数のペア）。
+  - `prior` / `value`: 単体呼び出し用。callable なら `prior(fen, uci_list) -> list[float]`、`value(fen) -> float`。root 手番から見た値で [-1, 1] を返す想定。
+  - `batch_prior` / `batch_value`: バッチ用。両方 callable のときバッチモード（Python↔C++ の呼び出し回数を削減）。詳細は [batch_mcts.md](batch_mcts.md)。
 
 ## 例
 
 - [../examples/test_binding.py](../examples/test_binding.py) — バインディングの最小テスト
 - [../examples/run_mcts_with_prior_value.py](../examples/run_mcts_with_prior_value.py) — prior/value を渡す例
+- [../examples/run_mcts_batch.py](../examples/run_mcts_batch.py) — バッチ prior/value の例

@@ -38,6 +38,10 @@ struct MCTSOptions {
     std::function<std::vector<double>(const std::vector<std::string>& fens)> batch_value_fn;
     int batch_size = 32;
     double c_puct = 1.4142135623730950488;  // sqrt(2)
+    /// ルートの prior に加えるディリクレノイズ。0.0 なら無効
+    double dirichlet_alpha = 0.0;
+    /// ルートでの混合率: (1-epsilon)*prior + epsilon*dirichlet
+    double dirichlet_epsilon = 0.25;
 };
 
 MCTSResult RunMCTS(const Board& root, int iterations, std::mt19937& gen);
