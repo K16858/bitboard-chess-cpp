@@ -5,6 +5,7 @@
 #include "move.hpp"
 #include <functional>
 #include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -25,9 +26,17 @@ struct MCTSResult {
 };
 
 /// prior/value を外から注入するオプション。空なら従来どおり一様 prior + DoRandomPlayout。
+/// batch_prior_fn / batch_value_fn が両方セットされている場合はバッチモードで呼び出し回数を削減。
 struct MCTSOptions {
     std::function<std::vector<double>(const Board&, const std::vector<Move>&)> prior_fn;
     std::function<double(const Board&)> value_fn;
+    /// バッチモード用: (fen_list, uci_list_per_fen) -> prior_list (各要素は合法手数と同じ長さ)
+    std::function<std::vector<std::vector<double>>(
+        const std::vector<std::string>& fens,
+        const std::vector<std::vector<std::string>>& uci_list_per_fen)> batch_prior_fn;
+    /// バッチモード用: fen_list -> value_list (各要素は [-1,1])
+    std::function<std::vector<double>(const std::vector<std::string>& fens)> batch_value_fn;
+    int batch_size = 32;
     double c_puct = 1.4142135623730950488;  // sqrt(2)
 };
 
