@@ -82,27 +82,58 @@ PYBIND11_MODULE(chess_engine, m) {
     m.def("init", &MoveGen::Init, "Initialize move generator tables. Call once before using Board or run_mcts.");
 
     m.def("run_mcts", [](BoardWrapper& bw, int iterations, unsigned int seed,
-                         py::object prior, py::object value) {
+                         py::object prior, py::object value,
+                         py::object batch_prior, py::object batch_value, int batch_size) {
         std::mt19937 gen(seed);
         MCTSOptions opts;
-        if (!prior.is_none() && py::hasattr(prior, "__call__")) {
-            opts.prior_fn = [prior](const Board& board, const std::vector<Move>& moves) {
+        opts.batch_size = std::max(1, std::min(batch_size, 1024));
+
+        bool use_batch = (!batch_prior.is_none() && py::hasattr(batch_prior, "__call__") &&
+                         !batch_value.is_none() && py::hasattr(batch_value, "__call__"));
+
+        if (use_batch) {
+            opts.batch_prior_fn = [batch_prior](const std::vector<std::string>& fens,
+                                                 const std::vector<std::vector<std::string>>& uci_list_per_fen) {
                 py::gil_scoped_acquire acquire;
-                std::string fen = board.GetFen();
-                std::vector<std::string> uci;
-                uci.reserve(moves.size());
-                for (const Move& m : moves) uci.push_back(move_to_uci(m));
-                py::object result = prior(py::cast(fen), py::cast(uci));
+                py::list py_fens;
+                for (const auto& f : fens) py_fens.append(py::cast(f));
+                py::list py_uci_lists;
+                for (const auto& u : uci_list_per_fen) py_uci_lists.append(py::cast(u));
+                py::object result = batch_prior(py_fens, py_uci_lists);
+                std::vector<std::vector<double>> out;
+                for (py::handle h : result) {
+                    out.push_back(h.cast<std::vector<double>>());
+                }
+                return out;
+            };
+            opts.batch_value_fn = [batch_value](const std::vector<std::string>& fens) {
+                py::gil_scoped_acquire acquire;
+                py::list py_fens;
+                for (const auto& f : fens) py_fens.append(py::cast(f));
+                py::object result = batch_value(py_fens);
                 return result.cast<std::vector<double>>();
             };
+        } else {
+            if (!prior.is_none() && py::hasattr(prior, "__call__")) {
+                opts.prior_fn = [prior](const Board& board, const std::vector<Move>& moves) {
+                    py::gil_scoped_acquire acquire;
+                    std::string fen = board.GetFen();
+                    std::vector<std::string> uci;
+                    uci.reserve(moves.size());
+                    for (const Move& m : moves) uci.push_back(move_to_uci(m));
+                    py::object result = prior(py::cast(fen), py::cast(uci));
+                    return result.cast<std::vector<double>>();
+                };
+            }
+            if (!value.is_none() && py::hasattr(value, "__call__")) {
+                opts.value_fn = [value](const Board& board) {
+                    py::gil_scoped_acquire acquire;
+                    py::object result = value(py::cast(board.GetFen()));
+                    return result.cast<double>();
+                };
+            }
         }
-        if (!value.is_none() && py::hasattr(value, "__call__")) {
-            opts.value_fn = [value](const Board& board) {
-                py::gil_scoped_acquire acquire;
-                py::object result = value(py::cast(board.GetFen()));
-                return result.cast<double>();
-            };
-        }
+
         MCTSResult res = RunMCTS(bw.board_, iterations, gen, opts);
         std::vector<std::string> uci_list;
         std::vector<int> visits;
@@ -115,7 +146,10 @@ PYBIND11_MODULE(chess_engine, m) {
         return py::make_tuple(uci_list, visits, res.rootValue, res.rootVisits);
     }, py::arg("board"), py::arg("iterations"), py::arg("seed"),
        py::arg("prior") = py::none(), py::arg("value") = py::none(),
-       "Run MCTS on board. prior(fen, uci_list)->list[float], value(fen)->float. Returns (uci_list, visits, root_value, root_visits). uci_list[i] and visits[i] are paired.");
+       py::arg("batch_prior") = py::none(), py::arg("batch_value") = py::none(), py::arg("batch_size") = 32,
+       "Run MCTS. Use batch_prior/batch_value for batched NN inference (fewer Python calls). "
+       "batch_prior(fen_list, uci_list_per_fen)->list[list[float]], batch_value(fen_list)->list[float]. "
+       "Returns (uci_list, visits, root_value, root_visits).");
 
     py::class_<BoardWrapper>(m, "Board")
         .def(py::init([](py::object fen) {
