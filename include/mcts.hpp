@@ -16,6 +16,7 @@ struct MCTSNode {
     int N;
     double W;
     double P;  // prior (P(s,a)); 未設定時は一様
+    int N_virtual = 0;  // バッチ用: 選択中ワーカー数。UCB で N + N_virtual として使用し、並列ワーカーが同じ子を選ばないようにする
 };
 
 // RunMCTSの戻り値

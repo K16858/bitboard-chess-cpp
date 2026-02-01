@@ -282,7 +282,10 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                 }
             }
 
+            const int slots = std::max(0, iterations - completed);
+            int assigned = 0;
             for (std::size_t i = 0; i < workers.size(); i++) {
+                if (assigned >= slots) break;
                 Worker& w = workers[i];
                 if (w.state != NEED_PRIOR) continue;
                 MCTSNode* node = w.node;
@@ -290,15 +293,25 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                 MCTSNode* best = nullptr;
                 double bestScore = -1e99;
                 for (MCTSNode* c : node->children) {
-                    double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / (1.0 + c->N);
+                    double denom = 1.0 + c->N + c->N_virtual;
+                    double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / denom;
                     if (c->N > 0) score += c->W / c->N;
                     if (score > bestScore) { bestScore = score; best = c; }
                 }
                 if (!best) { w.state = RUN; continue; }
+                best->N_virtual += 1;
                 w.board.MakeMove(best->move_from_parent);
                 w.node = best;
                 w.leaf_node = best;
                 w.state = NEED_VALUE;
+                assigned++;
+            }
+            for (Worker& w : workers) {
+                if (w.state == NEED_PRIOR) {
+                    w.state = RUN;
+                    w.board = rootBoard;
+                    w.node = root;
+                }
             }
         }
 
@@ -315,17 +328,34 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
             std::vector<double> values = options.batch_value_fn(fens);
             if (values.size() != fens.size()) values.assign(fens.size(), 0.0);
 
-            for (std::size_t fi = 0; fi < fens.size(); fi++) {
+            int remaining = std::max(0, iterations - completed);
+            for (std::size_t fi = 0; fi < fens.size() && remaining > 0; fi++) {
                 double value = (fi < values.size()) ? values[fi] : 0.0;
                 for (std::size_t idx : valueWorkerIndices[fens[fi]]) {
+                    if (remaining <= 0) break;
                     Worker& w = workers[idx];
                     double sign = 1.0;
                     for (MCTSNode* p = w.leaf_node; p != nullptr; p = p->parent) {
                         p->N++;
                         p->W += sign * value;
+                        if (p->parent != nullptr) p->N_virtual = std::max(0, p->N_virtual - 1);
                         sign = -sign;
                     }
                     completed++;
+                    remaining--;
+                    w.board = rootBoard;
+                    w.node = root;
+                    w.state = RUN;
+                    w.leaf_node = nullptr;
+                }
+            }
+            for (std::size_t fi = 0; fi < fens.size(); fi++) {
+                for (std::size_t idx : valueWorkerIndices[fens[fi]]) {
+                    Worker& w = workers[idx];
+                    if (w.state != NEED_VALUE) continue;
+                    for (MCTSNode* p = w.leaf_node; p != nullptr; p = p->parent) {
+                        if (p->parent != nullptr) p->N_virtual = std::max(0, p->N_virtual - 1);
+                    }
                     w.board = rootBoard;
                     w.node = root;
                     w.state = RUN;
@@ -347,6 +377,7 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                     for (MCTSNode* p = w.node; p != nullptr; p = p->parent) {
                         p->N++;
                         p->W += sign * value;
+                        if (p->parent != nullptr) p->N_virtual = std::max(0, p->N_virtual - 1);
                         sign = -sign;
                     }
                     completed++;
@@ -363,11 +394,13 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
             MCTSNode* best = nullptr;
             double bestScore = -1e99;
             for (MCTSNode* c : w.node->children) {
-                double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / (1.0 + c->N);
+                double denom = 1.0 + c->N + c->N_virtual;
+                double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / denom;
                 if (c->N > 0) score += c->W / c->N;
                 if (score > bestScore) { bestScore = score; best = c; }
             }
             if (!best) continue;
+            best->N_virtual += 1;
             w.board.MakeMove(best->move_from_parent);
             w.node = best;
             if (best->children.empty()) {
