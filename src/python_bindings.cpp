@@ -83,7 +83,7 @@ PYBIND11_MODULE(chess_engine, m) {
 
     m.def("run_mcts", [](BoardWrapper& bw, int iterations, unsigned int seed,
                          py::object prior, py::object value,
-                         py::object batch_prior, py::object batch_value, int batch_size,
+                         py::object batch_eval, py::object batch_prior, py::object batch_value, int batch_size,
                          double dirichlet_alpha, double dirichlet_epsilon) {
         std::mt19937 gen(seed);
         MCTSOptions opts;
@@ -91,10 +91,32 @@ PYBIND11_MODULE(chess_engine, m) {
         opts.dirichlet_alpha = dirichlet_alpha;
         opts.dirichlet_epsilon = dirichlet_epsilon;
 
-        bool use_batch = (!batch_prior.is_none() && py::hasattr(batch_prior, "__call__") &&
-                         !batch_value.is_none() && py::hasattr(batch_value, "__call__"));
+        bool use_batch_eval = (!batch_eval.is_none() && py::hasattr(batch_eval, "__call__"));
+        bool use_batch_split = (!batch_prior.is_none() && py::hasattr(batch_prior, "__call__") &&
+                               !batch_value.is_none() && py::hasattr(batch_value, "__call__"));
+        bool use_batch = use_batch_eval || use_batch_split;
 
-        if (use_batch) {
+        if (use_batch_eval) {
+            opts.batch_eval_fn = [batch_eval](const std::vector<std::string>& fens,
+                                              const std::vector<std::vector<std::string>>& uci_list_per_fen) {
+                py::gil_scoped_acquire acquire;
+                py::list py_fens;
+                for (const auto& f : fens) py_fens.append(py::cast(f));
+                py::list py_uci_lists;
+                for (const auto& u : uci_list_per_fen) py_uci_lists.append(py::cast(u));
+                py::object result = batch_eval(py_fens, py_uci_lists);
+                BatchEvalResult out;
+                py::tuple t = result.cast<py::tuple>();
+                if (t.size() < 2) return out;
+                py::object prior_list = t[0];
+                py::object value_list = t[1];
+                for (py::handle h : prior_list) {
+                    out.priors.push_back(h.cast<std::vector<double>>());
+                }
+                out.values = value_list.cast<std::vector<double>>();
+                return out;
+            };
+        } else if (use_batch_split) {
             opts.batch_prior_fn = [batch_prior](const std::vector<std::string>& fens,
                                                  const std::vector<std::vector<std::string>>& uci_list_per_fen) {
                 py::gil_scoped_acquire acquire;
@@ -116,7 +138,8 @@ PYBIND11_MODULE(chess_engine, m) {
                 py::object result = batch_value(py_fens);
                 return result.cast<std::vector<double>>();
             };
-        } else {
+        }
+        if (!use_batch) {
             if (!prior.is_none() && py::hasattr(prior, "__call__")) {
                 opts.prior_fn = [prior](const Board& board, const std::vector<Move>& moves) {
                     py::gil_scoped_acquire acquire;
@@ -149,9 +172,10 @@ PYBIND11_MODULE(chess_engine, m) {
         return py::make_tuple(uci_list, visits, res.rootValue, res.rootVisits);
     }, py::arg("board"), py::arg("iterations"), py::arg("seed"),
        py::arg("prior") = py::none(), py::arg("value") = py::none(),
-       py::arg("batch_prior") = py::none(), py::arg("batch_value") = py::none(), py::arg("batch_size") = 32,
+       py::arg("batch_eval") = py::none(), py::arg("batch_prior") = py::none(), py::arg("batch_value") = py::none(), py::arg("batch_size") = 32,
        py::arg("dirichlet_alpha") = 0.0, py::arg("dirichlet_epsilon") = 0.25,
-       "Run MCTS. Use batch_prior/batch_value for batched NN inference (fewer Python calls). "
+       "Run MCTS. Use batch_eval(fen_list, uci_list_per_fen) for PVNN (single inference); "
+       "or batch_prior/batch_value for separate calls. "
        "dirichlet_alpha>0 adds Dirichlet noise at root (e.g. 0.3); dirichlet_epsilon mixes with prior (e.g. 0.25). "
        "Returns (uci_list, visits, root_value, root_visits).");
 
