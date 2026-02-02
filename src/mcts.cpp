@@ -89,7 +89,7 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
     out.rootVisits = 0;
     if (iterations <= 0) return out;
 
-    if (options.batch_prior_fn && options.batch_value_fn) {
+    if (options.batch_eval_fn || (options.batch_prior_fn && options.batch_value_fn)) {
         return RunMCTSBatch(rootBoard, iterations, gen, options);
     }
 
@@ -245,9 +245,17 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                 fens.push_back(kv.first);
                 uciPerFen.push_back(movesToUci(kv.second.front().second.second));
             }
-            std::vector<std::vector<double>> priorResults = options.batch_prior_fn(fens, uciPerFen);
+            std::vector<std::vector<double>> priorResults;
+            std::vector<double> values;
+            if (options.batch_eval_fn) {
+                BatchEvalResult evalResult = options.batch_eval_fn(fens, uciPerFen);
+                priorResults = std::move(evalResult.priors);
+                values = std::move(evalResult.values);
+            } else {
+                priorResults = options.batch_prior_fn(fens, uciPerFen);
+                values = options.batch_value_fn(fens);
+            }
             if (priorResults.size() != fens.size()) priorResults.clear();
-            std::vector<double> values = options.batch_value_fn(fens);
             if (values.size() != fens.size()) values.assign(fens.size(), 0.0);
 
             for (std::size_t fi = 0; fi < fens.size(); fi++) {
