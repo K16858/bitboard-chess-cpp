@@ -74,7 +74,6 @@ namespace {
         MCTSNode* node;
         WorkerState state = RUN;
         std::vector<Move> moves;
-        MCTSNode* leaf_node = nullptr;
     };
 }
 
