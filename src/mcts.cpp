@@ -67,7 +67,7 @@ namespace {
         return out;
     }
 
-    enum WorkerState { RUN, NEED_PRIOR, NEED_VALUE };
+    enum WorkerState { RUN, NEED_EVAL };  // NEED_EVAL: リーフ到達。同一局面で Prior+Value 取得 → バックプロパ → 展開 → 1手進める
 
     struct Worker {
         Board board;
@@ -224,30 +224,33 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
     int completed = 0;
 
     while (completed < iterations) {
-        // --- Flush prior batch ---
-        std::map<std::string, std::vector<std::pair<MCTSNode*, std::vector<Move>>>> priorByFen;
+        // --- Flush Eval (AlphaZero-style: same FEN for prior+value, then backprop → expand → move) ---
+        using EvalEntry = std::pair<std::size_t, std::pair<MCTSNode*, std::vector<Move>>>;
+        std::map<std::string, std::vector<EvalEntry>> evalByFen;
         for (std::size_t i = 0; i < workers.size(); i++) {
             Worker& w = workers[i];
-            if (w.state != NEED_PRIOR) continue;
+            if (w.state != NEED_EVAL) continue;
             std::string fen = w.board.GetFen();
-            priorByFen[fen].push_back({w.node, w.moves});
+            evalByFen[fen].push_back({i, {w.node, w.moves}});
         }
-        if (!priorByFen.empty()) {
+        if (!evalByFen.empty()) {
             std::vector<std::string> fens;
             std::vector<std::vector<std::string>> uciPerFen;
-            fens.reserve(priorByFen.size());
-            uciPerFen.reserve(priorByFen.size());
-            for (const auto& kv : priorByFen) {
+            fens.reserve(evalByFen.size());
+            uciPerFen.reserve(evalByFen.size());
+            for (const auto& kv : evalByFen) {
                 fens.push_back(kv.first);
-                uciPerFen.push_back(movesToUci(kv.second.front().second));
+                uciPerFen.push_back(movesToUci(kv.second.front().second.second));
             }
             std::vector<std::vector<double>> priorResults = options.batch_prior_fn(fens, uciPerFen);
             if (priorResults.size() != fens.size()) priorResults.clear();
+            std::vector<double> values = options.batch_value_fn(fens);
+            if (values.size() != fens.size()) values.assign(fens.size(), 0.0);
 
             for (std::size_t fi = 0; fi < fens.size(); fi++) {
                 const std::vector<double>& priors = (fi < priorResults.size()) ? priorResults[fi] : std::vector<double>();
-                const auto& nodesAndMoves = priorByFen[fens[fi]];
-                const std::vector<Move>& moves = nodesAndMoves.front().second;
+                const auto& entries = evalByFen[fens[fi]];
+                const std::vector<Move>& moves = entries.front().second.second;
                 double sumP = 0.0;
                 if (priors.size() == moves.size()) {
                     for (double x : priors) sumP += (x > 0.0 ? x : 0.0);
@@ -260,16 +263,16 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                     else
                         p[i] = uniformP;
                 }
-                const bool isRootForFen = (nodesAndMoves.front().first->parent == nullptr);
+                const bool isRootForFen = (entries.front().second.first->parent == nullptr);
                 if (isRootForFen && options.dirichlet_alpha > 0.0)
                     applyDirichletToPriors(p, options.dirichlet_alpha, options.dirichlet_epsilon, gen);
 
                 std::set<MCTSNode*> expanded;
-                for (const auto& np : nodesAndMoves) {
-                    MCTSNode* node = np.first;
+                for (const auto& e : entries) {
+                    MCTSNode* node = e.second.first;
                     if (expanded.count(node)) continue;
                     expanded.insert(node);
-                    const std::vector<Move>& mov = np.second;
+                    const std::vector<Move>& mov = e.second.second;
                     for (std::size_t i = 0; i < mov.size(); i++) {
                         MCTSNode* c = new MCTSNode();
                         c->move_from_parent = mov[i];
@@ -282,60 +285,16 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                 }
             }
 
-            const int slots = std::max(0, iterations - completed);
-            int assigned = 0;
-            for (std::size_t i = 0; i < workers.size(); i++) {
-                if (assigned >= slots) break;
-                Worker& w = workers[i];
-                if (w.state != NEED_PRIOR) continue;
-                MCTSNode* node = w.node;
-                int parentN = node->N;
-                MCTSNode* best = nullptr;
-                double bestScore = -1e99;
-                for (MCTSNode* c : node->children) {
-                    double denom = 1.0 + c->N + c->N_virtual;
-                    double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / denom;
-                    if (c->N > 0) score += c->W / c->N;
-                    if (score > bestScore) { bestScore = score; best = c; }
-                }
-                if (!best) { w.state = RUN; continue; }
-                best->N_virtual += 1;
-                w.board.MakeMove(best->move_from_parent);
-                w.node = best;
-                w.leaf_node = best;
-                w.state = NEED_VALUE;
-                assigned++;
-            }
-            for (Worker& w : workers) {
-                if (w.state == NEED_PRIOR) {
-                    w.state = RUN;
-                    w.board = rootBoard;
-                    w.node = root;
-                }
-            }
-        }
-
-        // --- Flush value batch ---
-        std::map<std::string, std::vector<std::size_t>> valueWorkerIndices;
-        for (std::size_t i = 0; i < workers.size(); i++) {
-            if (workers[i].state != NEED_VALUE) continue;
-            valueWorkerIndices[workers[i].board.GetFen()].push_back(i);
-        }
-        if (!valueWorkerIndices.empty()) {
-            std::vector<std::string> fens;
-            fens.reserve(valueWorkerIndices.size());
-            for (const auto& kv : valueWorkerIndices) fens.push_back(kv.first);
-            std::vector<double> values = options.batch_value_fn(fens);
-            if (values.size() != fens.size()) values.assign(fens.size(), 0.0);
-
             int remaining = std::max(0, iterations - completed);
             for (std::size_t fi = 0; fi < fens.size() && remaining > 0; fi++) {
                 double value = (fi < values.size()) ? values[fi] : 0.0;
-                for (std::size_t idx : valueWorkerIndices[fens[fi]]) {
+                for (const auto& e : evalByFen[fens[fi]]) {
                     if (remaining <= 0) break;
+                    std::size_t idx = e.first;
+                    MCTSNode* leaf = e.second.first;
                     Worker& w = workers[idx];
                     double sign = 1.0;
-                    for (MCTSNode* p = w.leaf_node; p != nullptr; p = p->parent) {
+                    for (MCTSNode* p = leaf; p != nullptr; p = p->parent) {
                         p->N++;
                         p->W += sign * value;
                         if (p->parent != nullptr) p->N_virtual = std::max(0, p->N_virtual - 1);
@@ -343,23 +302,28 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                     }
                     completed++;
                     remaining--;
-                    w.board = rootBoard;
-                    w.node = root;
+                    int parentN = leaf->N;
+                    MCTSNode* best = nullptr;
+                    double bestScore = -1e99;
+                    for (MCTSNode* c : leaf->children) {
+                        double denom = 1.0 + c->N + c->N_virtual;
+                        double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / denom;
+                        if (c->N > 0) score += c->W / c->N;
+                        if (score > bestScore) { bestScore = score; best = c; }
+                    }
+                    if (best) {
+                        best->N_virtual += 1;
+                        w.board.MakeMove(best->move_from_parent);
+                        w.node = best;
+                    }
                     w.state = RUN;
-                    w.leaf_node = nullptr;
                 }
             }
-            for (std::size_t fi = 0; fi < fens.size(); fi++) {
-                for (std::size_t idx : valueWorkerIndices[fens[fi]]) {
-                    Worker& w = workers[idx];
-                    if (w.state != NEED_VALUE) continue;
-                    for (MCTSNode* p = w.leaf_node; p != nullptr; p = p->parent) {
-                        if (p->parent != nullptr) p->N_virtual = std::max(0, p->N_virtual - 1);
-                    }
+            for (Worker& w : workers) {
+                if (w.state == NEED_EVAL) {
+                    w.state = RUN;
                     w.board = rootBoard;
                     w.node = root;
-                    w.state = RUN;
-                    w.leaf_node = nullptr;
                 }
             }
         }
@@ -386,7 +350,7 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                     w.state = RUN;
                     continue;
                 }
-                w.state = NEED_PRIOR;
+                w.state = NEED_EVAL;
                 continue;
             }
 
@@ -403,10 +367,6 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
             best->N_virtual += 1;
             w.board.MakeMove(best->move_from_parent);
             w.node = best;
-            if (best->children.empty()) {
-                w.leaf_node = best;
-                w.state = NEED_VALUE;
-            }
         }
     }
 
