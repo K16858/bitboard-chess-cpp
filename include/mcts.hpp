@@ -26,12 +26,20 @@ struct MCTSResult {
     int rootVisits;
 };
 
-/// prior/value を外から注入するオプション。空なら従来どおり一様 prior + DoRandomPlayout。
-/// batch_prior_fn / batch_value_fn が両方セットされている場合はバッチモードで呼び出し回数を削減。
+/// PVNN 等で 1 回の推論で Policy+Value を返すバッチ用の戻り値
+struct BatchEvalResult {
+    std::vector<std::vector<double>> priors;  // 各 FEN の合法手 prior（正規化は C++ 側で行う）
+    std::vector<double> values;               // 各 FEN の value [-1, 1]
+};
+
 struct MCTSOptions {
     std::function<std::vector<double>(const Board&, const std::vector<Move>&)> prior_fn;
     std::function<double(const Board&)> value_fn;
-    /// バッチモード用: (fen_list, uci_list_per_fen) -> prior_list (各要素は合法手数と同じ長さ)
+    /// バッチモード用（推論 1 回）: (fen_list, uci_list_per_fen) -> (prior_list, value_list)。PVNN 向け
+    std::function<BatchEvalResult(
+        const std::vector<std::string>& fens,
+        const std::vector<std::vector<std::string>>& uci_list_per_fen)> batch_eval_fn;
+    /// バッチモード用（推論 2 回）: (fen_list, uci_list_per_fen) -> prior_list
     std::function<std::vector<std::vector<double>>(
         const std::vector<std::string>& fens,
         const std::vector<std::vector<std::string>>& uci_list_per_fen)> batch_prior_fn;
