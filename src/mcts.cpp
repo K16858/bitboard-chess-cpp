@@ -67,6 +67,17 @@ namespace {
         return out;
     }
 
+    /// PFU: 未訪問子の初期値。parent_value - pfu_scale/sqrt(parent_N) を [-1,1] にクリップ。pfu_scale<=0 または parent->N==0 なら 0。
+    static double getPfuInitialValue(const MCTSNode* parent, const MCTSNode* child, double pfu_scale) {
+        if (pfu_scale <= 0.0 || parent->N <= 0 || child->N > 0) return 0.0;
+        double parentValue = parent->W / static_cast<double>(parent->N);
+        double delta = pfu_scale / std::sqrt(static_cast<double>(parent->N));
+        double v = parentValue - delta;
+        if (v < -1.0) return -1.0;
+        if (v > 1.0) return 1.0;
+        return v;
+    }
+
     enum WorkerState { RUN, NEED_EVAL };  // NEED_EVAL: リーフ到達。同一局面で Prior+Value 取得 → バックプロパ → 展開 → 1手進める
 
     struct Worker {
@@ -168,6 +179,8 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                     double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / (1.0 + c->N);
                     if (c->N > 0)
                         score += c->W / c->N;
+                    else if (options.pfu_scale > 0.0)
+                        score += getPfuInitialValue(node, c, options.pfu_scale);
                     if (score > bestScore) {
                         bestScore = score;
                         best = c;
@@ -186,6 +199,8 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                 double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / (1.0 + c->N);
                 if (c->N > 0)
                     score += c->W / c->N;
+                else if (options.pfu_scale > 0.0)
+                    score += getPfuInitialValue(node, c, options.pfu_scale);
                 if (score > bestScore) {
                     bestScore = score;
                     best = c;
@@ -320,6 +335,7 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                         double denom = 1.0 + c->N + c->N_virtual;
                         double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / denom;
                         if (c->N > 0) score += c->W / c->N;
+                        else if (options.pfu_scale > 0.0) score += getPfuInitialValue(leaf, c, options.pfu_scale);
                         if (score > bestScore) { bestScore = score; best = c; }
                     }
                     if (best) {
@@ -372,6 +388,7 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
                 double denom = 1.0 + c->N + c->N_virtual;
                 double score = c_puct * c->P * std::sqrt(static_cast<double>(parentN + 1)) / denom;
                 if (c->N > 0) score += c->W / c->N;
+                else if (options.pfu_scale > 0.0) score += getPfuInitialValue(w.node, c, options.pfu_scale);
                 if (score > bestScore) { bestScore = score; best = c; }
             }
             if (!best) continue;

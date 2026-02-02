@@ -51,6 +51,9 @@ struct MCTSOptions {
     double dirichlet_alpha = 0.0;
     /// ルートでの混合率: (1-epsilon)*prior + epsilon*dirichlet
     double dirichlet_epsilon = 0.25;
+    /// PFU: 未訪問ノードの初期値。0 なら無効。>0 のとき未訪問子のスコアに initial_value を加える。
+    /// initial_value = clamp(parent_value - delta, -1, 1)。delta = pfu_scale/sqrt(parent_N) で親の訪問回数に応じてペナルティを減衰。
+    double pfu_scale = 0.0;
 };
 
 MCTSResult RunMCTS(const Board& root, int iterations, std::mt19937& gen);
