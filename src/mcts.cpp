@@ -111,11 +111,26 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                 MoveGen::GenerateLegalMoves(board, moves);
                 if (moves.empty()) {
                     double value = resultToValue(MoveGen::GetGameResult(board), rootWhite);
+                    double sign = 1.0;
                     for (MCTSNode* p = node; p != nullptr; p = p->parent) {
                         p->N++;
-                        p->W += value;
+                        p->W += sign * value;
+                        sign = -sign;
                     }
                     break;
+                }
+
+                double value;
+                if (options.value_fn) {
+                    value = options.value_fn(board);
+                } else {
+                    value = resultToValue(MoveGen::DoRandomPlayout(board, gen), rootWhite);
+                }
+                double sign = 1.0;
+                for (MCTSNode* p = node; p != nullptr; p = p->parent) {
+                    p->N++;
+                    p->W += sign * value;
+                    sign = -sign;
                 }
                 std::vector<double> priors;
                 if (options.prior_fn) {
@@ -160,18 +175,7 @@ MCTSResult RunMCTS(const Board& rootBoard, int iterations, std::mt19937& gen, co
                 }
                 if (!best) break;
                 board.MakeMove(best->move_from_parent);
-                double value;
-                if (options.value_fn) {
-                    value = options.value_fn(board);
-                } else {
-                    value = resultToValue(MoveGen::DoRandomPlayout(board, gen), rootWhite);
-                }
-                double sign = 1.0;
-                for (MCTSNode* p = best; p != nullptr; p = p->parent) {
-                    p->N++;
-                    p->W += sign * value;
-                    sign = -sign;
-                }
+                node = best;
                 break;
             }
 
