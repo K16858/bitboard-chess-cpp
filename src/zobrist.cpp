@@ -3,6 +3,8 @@
 
 U64 Zobrist::table[64][12] = {{0}};
 U64 Zobrist::sideKey = 0;
+U64 Zobrist::castlingKeys[4] = {0};
+U64 Zobrist::epKeys[16] = {0};
 bool Zobrist::initialized = false;
 
 void Zobrist::Init() {
@@ -12,6 +14,8 @@ void Zobrist::Init() {
         for (int i = 0; i < 12; i++)
             table[sq][i] = gen();
     sideKey = gen();
+    for (int i = 0; i < 4; i++) castlingKeys[i] = gen();
+    for (int i = 0; i < 16; i++) epKeys[i] = gen();
     initialized = true;
 }
 
@@ -22,4 +26,12 @@ U64 Zobrist::GetPieceKey(Square sq, int pieceType, bool isWhite) {
 
 U64 Zobrist::GetSideKey() {
     return sideKey;
+}
+
+U64 Zobrist::GetCastlingKey(int idx) {
+    return castlingKeys[idx & 3];
+}
+
+U64 Zobrist::GetEnPassantKey(int epKeyIndex) {
+    return epKeys[epKeyIndex & 15];
 }

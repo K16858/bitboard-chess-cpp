@@ -25,6 +25,22 @@ Board::Board() : whiteToMove(true), zobristHash(0), castlingRights_(0x0Fu), enPa
     ComputeZobristHash();
 }
 
+namespace {
+    static U64 CastlingEpHash(uint8_t castling, int epTarget) {
+        U64 h = 0;
+        if (castling & 1u) h ^= Zobrist::GetCastlingKey(0);
+        if (castling & 2u) h ^= Zobrist::GetCastlingKey(1);
+        if (castling & 4u) h ^= Zobrist::GetCastlingKey(2);
+        if (castling & 8u) h ^= Zobrist::GetCastlingKey(3);
+        if (epTarget >= 0) {
+            int idx = (epTarget >= 16 && epTarget <= 23) ? (epTarget - 16)
+                     : (epTarget >= 40 && epTarget <= 47) ? (epTarget - 32) : -1;
+            if (idx >= 0) h ^= Zobrist::GetEnPassantKey(idx);
+        }
+        return h;
+    }
+}
+
 void Board::ComputeZobristHash() {
     zobristHash = 0;
     for (int sq = 0; sq < 64; sq++) {
@@ -43,6 +59,7 @@ void Board::ComputeZobristHash() {
         else if (blackKings.GetBit(s)) zobristHash ^= Zobrist::GetPieceKey(s, KING, false);
     }
     if (!whiteToMove) zobristHash ^= Zobrist::GetSideKey();
+    zobristHash ^= CastlingEpHash(castlingRights_, enPassantTarget_);
 }
 
 void Board::SetFromFen(const std::string& fen) {
@@ -299,6 +316,8 @@ void Board::MakeMove(const Move& move) {
     bool wtm = whiteToMove;
     undoStack_.push_back({castlingRights_, enPassantTarget_, halfMoveClock_});
 
+    zobristHash ^= CastlingEpHash(castlingRights_, enPassantTarget_);
+
     bool enPassant = (move.pieceType == PAWN && move.capturedPiece == PAWN &&
                       GetPieceAt(move.to) == NO_PIECE);
     Square capSq = move.to;
@@ -354,6 +373,8 @@ void Board::MakeMove(const Move& move) {
         else if (move.to == A8) castlingRights_ &= static_cast<uint8_t>(~8u);
     }
 
+    zobristHash ^= CastlingEpHash(castlingRights_, enPassantTarget_);
+
     if (move.capturedPiece != NO_PIECE || move.pieceType == PAWN)
         halfMoveClock_ = 0;
     else
@@ -363,6 +384,8 @@ void Board::MakeMove(const Move& move) {
 }
 
 void Board::UnmakeMove(const Move& move) {
+    zobristHash ^= CastlingEpHash(castlingRights_, enPassantTarget_);
+
     whiteToMove = !whiteToMove;
     // 反転後: whiteToMove == 戻した手を指した側（mover）。駒の復元は mover=wtm, 取った駒=!wtm
     bool wtm = whiteToMove;
@@ -401,5 +424,6 @@ void Board::UnmakeMove(const Move& move) {
     castlingRights_ = u.castlingRights;
     enPassantTarget_ = u.enPassantTarget;
     halfMoveClock_ = u.halfMoveClock;
+    zobristHash ^= CastlingEpHash(castlingRights_, enPassantTarget_);
     Update();
 }
