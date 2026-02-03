@@ -84,12 +84,13 @@ PYBIND11_MODULE(chess_engine, m) {
     m.def("run_mcts", [](BoardWrapper& bw, int iterations, unsigned int seed,
                          py::object prior, py::object value,
                          py::object batch_eval, py::object batch_prior, py::object batch_value, int batch_size,
-                         double dirichlet_alpha, double dirichlet_epsilon) {
+                         double dirichlet_alpha, double dirichlet_epsilon, double pfu_scale) {
         std::mt19937 gen(seed);
         MCTSOptions opts;
         opts.batch_size = std::max(1, std::min(batch_size, 1024));
         opts.dirichlet_alpha = dirichlet_alpha;
         opts.dirichlet_epsilon = dirichlet_epsilon;
+        opts.pfu_scale = pfu_scale;
 
         bool use_batch_eval = (!batch_eval.is_none() && py::hasattr(batch_eval, "__call__"));
         bool use_batch_split = (!batch_prior.is_none() && py::hasattr(batch_prior, "__call__") &&
@@ -173,10 +174,11 @@ PYBIND11_MODULE(chess_engine, m) {
     }, py::arg("board"), py::arg("iterations"), py::arg("seed"),
        py::arg("prior") = py::none(), py::arg("value") = py::none(),
        py::arg("batch_eval") = py::none(), py::arg("batch_prior") = py::none(), py::arg("batch_value") = py::none(), py::arg("batch_size") = 32,
-       py::arg("dirichlet_alpha") = 0.0, py::arg("dirichlet_epsilon") = 0.25,
+       py::arg("dirichlet_alpha") = 0.0, py::arg("dirichlet_epsilon") = 0.25, py::arg("pfu_scale") = 0.0,
        "Run MCTS. Use batch_eval(fen_list, uci_list_per_fen) for PVNN (single inference); "
        "or batch_prior/batch_value for separate calls. "
        "dirichlet_alpha>0 adds Dirichlet noise at root (e.g. 0.3); dirichlet_epsilon mixes with prior (e.g. 0.25). "
+       "pfu_scale>0 enables PFU (unvisited node initial value = parent_value - pfu_scale/sqrt(parent_N), clipped). "
        "Returns (uci_list, visits, root_value, root_visits).");
 
     py::class_<BoardWrapper>(m, "Board")
