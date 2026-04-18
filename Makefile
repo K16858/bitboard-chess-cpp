@@ -23,7 +23,7 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # デバッグビルド
-debug: CXXFLAGS = -std=c++17 -Wall -Wextra $(DEBUGFLAGS)
+debug: CXXFLAGS = -std=c++17 -Wall -Wextra $(DEBUGFLAGS) -I include
 debug: clean $(TARGET)
 
 # クリーンアップ
@@ -65,7 +65,6 @@ python: $(PYMOD)
 $(PYMOD): $(PYTHON_OBJS)
 	$(CXX) -shared $(PYTHON_OBJS) -o $@ $(shell python3-config --ldflags 2>/dev/null || true)
 
-clean: clean-python
 clean-python:
 	rm -rf build/python $(PYMOD)
 
