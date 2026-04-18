@@ -2,6 +2,7 @@
 #include "movegen.hpp"
 #include "move.hpp"
 #include "mcts.hpp"
+#include <cctype>
 #include <iostream>
 #include <string>
 
@@ -31,9 +32,26 @@ int main() {
             if (input.size() >= 4) {
                 Square from = StrToSquare(input.substr(0, 2));
                 Square to = StrToSquare(input.substr(2, 2));
+                char promo = '\0';
+                if (input.size() >= 5)
+                    promo = static_cast<char>(std::tolower(static_cast<unsigned char>(input[4])));
                 const Move* found = nullptr;
-                for (const Move& m : legalMoves)
-                    if (m.from == from && m.to == to) { found = &m; break; }
+                for (const Move& m : legalMoves) {
+                    if (m.from != from || m.to != to) continue;
+                    if (m.promotionPiece == NO_PIECE) {
+                        if (promo == '\0') { found = &m; break; }
+                        continue;
+                    }
+                    char mc = 'q';
+                    if (m.promotionPiece == ROOK) mc = 'r';
+                    else if (m.promotionPiece == BISHOP) mc = 'b';
+                    else if (m.promotionPiece == KNIGHT) mc = 'n';
+                    if (promo != '\0') {
+                        if (promo == mc) { found = &m; break; }
+                    } else if (m.promotionPiece == QUEEN) {
+                        found = &m;
+                    }
+                }
                 if (found) gameBoard.MakeMove(*found);
                 else std::cout << "Illegal move.\n";
             }
