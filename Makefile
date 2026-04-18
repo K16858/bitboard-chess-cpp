@@ -36,6 +36,7 @@ run: $(TARGET)
 
 # チェックメイト局面で GetGameResult/GenerateLegalMoves のテスト
 test_game_result: $(OBJS)
+	@if [ ! -f tests/test_game_result.cpp ]; then echo "missing tests/test_game_result.cpp"; exit 1; fi
 	$(CXX) $(CXXFLAGS) -o test_game_result tests/test_game_result.cpp bitboard.o board.o movegen.o move.o zobrist.o
 
 # すべてクリーンして再ビルド
