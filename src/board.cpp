@@ -7,6 +7,7 @@
 
 Board::Board() : whiteToMove(true), zobristHash(0), castlingRights_(0x0Fu), enPassantTarget_(-1), halfMoveClock_(0) {
     Zobrist::Init();
+    MoveGen::Init();
     whitePawns.SetBoard(0x000000000000FF00ULL);
     whiteKnights.SetBoard(0x0000000000000042ULL);
     whiteBishops.SetBoard(0x0000000000000024ULL);
