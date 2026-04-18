@@ -30,12 +30,11 @@ static Move find_move_from_uci(const std::vector<Move>& moves, const std::string
 
 struct BoardWrapper {
     Board board_;
-    Move last_move_;
-    bool has_last_ = false;
+    std::vector<Move> move_history_;
 
     void set_fen(const std::string& fen) {
         board_.SetFromFen(fen);
-        has_last_ = false;
+        move_history_.clear();
     }
 
     std::vector<std::string> legal_moves() {
@@ -50,15 +49,16 @@ struct BoardWrapper {
     void push(const std::string& uci) {
         std::vector<Move> moves;
         MoveGen::GenerateLegalMoves(board_, moves);
-        last_move_ = find_move_from_uci(moves, uci);
-        board_.MakeMove(last_move_);
-        has_last_ = true;
+        Move m = find_move_from_uci(moves, uci);
+        board_.MakeMove(m);
+        move_history_.push_back(m);
     }
 
     void pop() {
-        if (!has_last_) throw std::runtime_error("no move to undo");
-        board_.UnmakeMove(last_move_);
-        has_last_ = false;
+        if (move_history_.empty()) throw std::runtime_error("no move to undo");
+        Move m = move_history_.back();
+        move_history_.pop_back();
+        board_.UnmakeMove(m);
     }
 
     int result() {
