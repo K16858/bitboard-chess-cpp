@@ -343,10 +343,13 @@ void Board::MakeMove(const Move& move) {
         else if (move.from == E1 && move.to == C1) { rookFrom = A1; rookTo = D1; }
         else if (move.from == E8 && move.to == G8) { rookFrom = H8; rookTo = F8; }
         else { rookFrom = A8; rookTo = D8; }
-        zobristHash ^= Zobrist::GetPieceKey(rookFrom, ROOK, wtm);
-        zobristHash ^= Zobrist::GetPieceKey(rookTo, ROOK, wtm);
-        ClearPieceAt(rookFrom, ROOK, wtm);
-        SetPieceAt(rookTo, ROOK, wtm);
+        U64 ownPieces = wtm ? GetWhitePieces() : GetBlackPieces();
+        if (GetPieceAt(rookFrom) == ROOK && (ownPieces & (1ULL << rookFrom))) {
+            zobristHash ^= Zobrist::GetPieceKey(rookFrom, ROOK, wtm);
+            zobristHash ^= Zobrist::GetPieceKey(rookTo, ROOK, wtm);
+            ClearPieceAt(rookFrom, ROOK, wtm);
+            SetPieceAt(rookTo, ROOK, wtm);
+        }
     }
     whiteToMove = !whiteToMove;
 
@@ -386,12 +389,12 @@ void Board::MakeMove(const Move& move) {
 void Board::UnmakeMove(const Move& move) {
     zobristHash ^= CastlingEpHash(castlingRights_, enPassantTarget_);
 
+    const BoardUndoState u = undoStack_.back();
     whiteToMove = !whiteToMove;
     // 反転後: whiteToMove == 戻した手を指した側（mover）。駒の復元は mover=wtm, 取った駒=!wtm
     bool wtm = whiteToMove;
-    // En passant: pawn capture where the pawn landed on the ep rank (rank 3 or 6); otherwise capSq == move.to
     bool enPassant = (move.pieceType == PAWN && move.capturedPiece == PAWN &&
-                      (static_cast<int>(move.to) / 8 == 2 || static_cast<int>(move.to) / 8 == 5));
+                      u.enPassantTarget == static_cast<int>(move.to));
     Square capSq = move.to;
     if (enPassant)
         capSq = wtm ? static_cast<Square>(static_cast<int>(move.to) - 8) : static_cast<Square>(static_cast<int>(move.to) + 8);
@@ -403,10 +406,13 @@ void Board::UnmakeMove(const Move& move) {
         else if (move.from == E1 && move.to == C1) { rookFrom = A1; rookTo = D1; }
         else if (move.from == E8 && move.to == G8) { rookFrom = H8; rookTo = F8; }
         else { rookFrom = A8; rookTo = D8; }
-        ClearPieceAt(rookTo, ROOK, wtm);
-        SetPieceAt(rookFrom, ROOK, wtm);
-        zobristHash ^= Zobrist::GetPieceKey(rookTo, ROOK, wtm);
-        zobristHash ^= Zobrist::GetPieceKey(rookFrom, ROOK, wtm);
+        U64 ownPieces = wtm ? GetWhitePieces() : GetBlackPieces();
+        if (GetPieceAt(rookTo) == ROOK && (ownPieces & (1ULL << rookTo))) {
+            ClearPieceAt(rookTo, ROOK, wtm);
+            SetPieceAt(rookFrom, ROOK, wtm);
+            zobristHash ^= Zobrist::GetPieceKey(rookTo, ROOK, wtm);
+            zobristHash ^= Zobrist::GetPieceKey(rookFrom, ROOK, wtm);
+        }
     }
     zobristHash ^= Zobrist::GetSideKey();
     int pieceToRemove = (move.promotionPiece != NO_PIECE) ? move.promotionPiece : move.pieceType;
@@ -419,7 +425,6 @@ void Board::UnmakeMove(const Move& move) {
     if (move.capturedPiece != NO_PIECE) {
         SetPieceAt(capSq, move.capturedPiece, !wtm);
     }
-    BoardUndoState u = undoStack_.back();
     undoStack_.pop_back();
     castlingRights_ = u.castlingRights;
     enPassantTarget_ = u.enPassantTarget;

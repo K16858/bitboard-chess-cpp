@@ -251,16 +251,44 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
     int ep = board.GetEnPassantTarget();
     
     std::vector<Move> pseudoLegal;
-    // キャスリング: キングが2マス動く手を pseudo-legal に追加（ルーク側・クイーン側、空きマス条件のみ）
+    // キャスリング: 空きマス/通過被攻撃/ルーク存在を満たす手のみ追加
     if (wtm) {
-        if (board.CanWhiteKingsideCastle() && !(allPieces & ((1ULL << F1) | (1ULL << G1))))
+        if (board.CanWhiteKingsideCastle()
+            && !(allPieces & ((1ULL << F1) | (1ULL << G1)))
+            && board.GetPieceAt(E1) == KING
+            && board.GetPieceAt(H1) == ROOK
+            && (ownPieces & (1ULL << H1))
+            && !board.IsSquareAttacked(E1, false)
+            && !board.IsSquareAttacked(F1, false)
+            && !board.IsSquareAttacked(G1, false))
             pseudoLegal.push_back(Move(E1, G1, KING));
-        if (board.CanWhiteQueensideCastle() && !(allPieces & ((1ULL << B1) | (1ULL << C1) | (1ULL << D1))))
+        if (board.CanWhiteQueensideCastle()
+            && !(allPieces & ((1ULL << B1) | (1ULL << C1) | (1ULL << D1)))
+            && board.GetPieceAt(E1) == KING
+            && board.GetPieceAt(A1) == ROOK
+            && (ownPieces & (1ULL << A1))
+            && !board.IsSquareAttacked(E1, false)
+            && !board.IsSquareAttacked(D1, false)
+            && !board.IsSquareAttacked(C1, false))
             pseudoLegal.push_back(Move(E1, C1, KING));
     } else {
-        if (board.CanBlackKingsideCastle() && !(allPieces & ((1ULL << F8) | (1ULL << G8))))
+        if (board.CanBlackKingsideCastle()
+            && !(allPieces & ((1ULL << F8) | (1ULL << G8)))
+            && board.GetPieceAt(E8) == KING
+            && board.GetPieceAt(H8) == ROOK
+            && (ownPieces & (1ULL << H8))
+            && !board.IsSquareAttacked(E8, true)
+            && !board.IsSquareAttacked(F8, true)
+            && !board.IsSquareAttacked(G8, true))
             pseudoLegal.push_back(Move(E8, G8, KING));
-        if (board.CanBlackQueensideCastle() && !(allPieces & ((1ULL << B8) | (1ULL << C8) | (1ULL << D8))))
+        if (board.CanBlackQueensideCastle()
+            && !(allPieces & ((1ULL << B8) | (1ULL << C8) | (1ULL << D8)))
+            && board.GetPieceAt(E8) == KING
+            && board.GetPieceAt(A8) == ROOK
+            && (ownPieces & (1ULL << A8))
+            && !board.IsSquareAttacked(E8, true)
+            && !board.IsSquareAttacked(D8, true)
+            && !board.IsSquareAttacked(C8, true))
             pseudoLegal.push_back(Move(E8, C8, KING));
     }
     for (int sq = 0; sq < 64; sq++) {
@@ -269,13 +297,32 @@ void MoveGen::GenerateLegalMoves(Board& board, std::vector<Move>& moves) {
         U64 targets = 0;
         switch (pieceType) {
             case PAWN: {
-                targets = (GetPawnMoves((Square)sq, wtm) & ~allPieces)
-                        | (GetPawnCaptures((Square)sq, wtm) & oppPieces);
+                U64 pawnCaptures = GetPawnCaptures((Square)sq, wtm) & oppPieces;
+                U64 pawnPushes = 0ULL;
+                int rank = sq / 8;
+                if (wtm) {
+                    int oneStep = sq + 8;
+                    if (oneStep < 64 && !(allPieces & (1ULL << oneStep))) {
+                        pawnPushes |= (1ULL << oneStep);
+                        int twoStep = sq + 16;
+                        if (rank == 1 && !(allPieces & (1ULL << twoStep)))
+                            pawnPushes |= (1ULL << twoStep);
+                    }
+                } else {
+                    int oneStep = sq - 8;
+                    if (oneStep >= 0 && !(allPieces & (1ULL << oneStep))) {
+                        pawnPushes |= (1ULL << oneStep);
+                        int twoStep = sq - 16;
+                        if (rank == 6 && !(allPieces & (1ULL << twoStep)))
+                            pawnPushes |= (1ULL << twoStep);
+                    }
+                }
+                targets = pawnPushes | pawnCaptures;
                 if (ep >= 0) {
                     int sr = sq / 8, sf = sq % 8, er = ep / 8, ef = ep % 8;
-                    if (wtm && sr == 3 && er == 4 && (sf - ef) * (sf - ef) == 1)
+                    if (wtm && sr == 4 && er == 5 && (sf - ef) * (sf - ef) == 1)
                         targets |= (1ULL << ep);
-                    if (!wtm && sr == 4 && er == 2 && (sf - ef) * (sf - ef) == 1)
+                    if (!wtm && sr == 3 && er == 2 && (sf - ef) * (sf - ef) == 1)
                         targets |= (1ULL << ep);
                 }
                 break;
