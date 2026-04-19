@@ -2,10 +2,10 @@
 #include "movegen.hpp"
 #include "move.hpp"
 #include <cmath>
-#include <map>
 #include <random>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace {
@@ -244,38 +244,47 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
     while (completed < iterations) {
         // --- Flush Eval (AlphaZero-style: same FEN for prior+value, then backprop → expand → move) ---
         using EvalEntry = std::pair<std::size_t, std::pair<MCTSNode*, std::vector<Move>>>;
-        std::map<std::string, std::vector<EvalEntry>> evalByFen;
+        // std::map だと辞書順になり、バッチ推論の戻り値インデックスと直感がズレる。
+        // ワーカー走査順で初出の FEN だけ列挙し、Python 側のリスト順と厳密に対応させる。
+        std::vector<std::string> batch_fens;
+        std::vector<std::vector<std::string>> batch_uci;
+        std::vector<std::vector<EvalEntry>> batch_entries;
+        std::unordered_map<std::string, std::size_t> fen_to_batch;
+        batch_fens.reserve(workers.size());
+        batch_uci.reserve(workers.size());
+        batch_entries.reserve(workers.size());
+        fen_to_batch.reserve(workers.size() * 2);
+
         for (std::size_t i = 0; i < workers.size(); i++) {
             Worker& w = workers[i];
             if (w.state != NEED_EVAL) continue;
-            std::string fen = w.board.GetFen();
-            evalByFen[fen].push_back({i, {w.node, w.moves}});
-        }
-        if (!evalByFen.empty()) {
-            std::vector<std::string> fens;
-            std::vector<std::vector<std::string>> uciPerFen;
-            fens.reserve(evalByFen.size());
-            uciPerFen.reserve(evalByFen.size());
-            for (const auto& kv : evalByFen) {
-                fens.push_back(kv.first);
-                uciPerFen.push_back(movesToUci(kv.second.front().second.second));
+            const std::string fen = w.board.GetFen();
+            auto ins = fen_to_batch.emplace(fen, batch_fens.size());
+            if (ins.second) {
+                batch_fens.push_back(fen);
+                batch_uci.push_back(movesToUci(w.moves));
+                batch_entries.emplace_back();
             }
+            const std::size_t bi = ins.first->second;
+            batch_entries[bi].push_back({i, {w.node, w.moves}});
+        }
+        if (!batch_fens.empty()) {
             std::vector<std::vector<double>> priorResults;
             std::vector<double> values;
             if (options.batch_eval_fn) {
-                BatchEvalResult evalResult = options.batch_eval_fn(fens, uciPerFen);
+                BatchEvalResult evalResult = options.batch_eval_fn(batch_fens, batch_uci);
                 priorResults = std::move(evalResult.priors);
                 values = std::move(evalResult.values);
             } else {
-                priorResults = options.batch_prior_fn(fens, uciPerFen);
-                values = options.batch_value_fn(fens);
+                priorResults = options.batch_prior_fn(batch_fens, batch_uci);
+                values = options.batch_value_fn(batch_fens);
             }
-            if (priorResults.size() != fens.size()) priorResults.clear();
-            if (values.size() != fens.size()) values.assign(fens.size(), 0.0);
+            if (priorResults.size() != batch_fens.size()) priorResults.clear();
+            if (values.size() != batch_fens.size()) values.assign(batch_fens.size(), 0.0);
 
-            for (std::size_t fi = 0; fi < fens.size(); fi++) {
+            for (std::size_t fi = 0; fi < batch_fens.size(); fi++) {
                 const std::vector<double>& priors = (fi < priorResults.size()) ? priorResults[fi] : std::vector<double>();
-                const auto& entries = evalByFen[fens[fi]];
+                const auto& entries = batch_entries[fi];
                 const std::vector<Move>& moves = entries.front().second.second;
                 double sumP = 0.0;
                 if (priors.size() == moves.size()) {
@@ -312,9 +321,9 @@ static MCTSResult RunMCTSBatch(const Board& rootBoard, int iterations, std::mt19
             }
 
             int remaining = std::max(0, iterations - completed);
-            for (std::size_t fi = 0; fi < fens.size() && remaining > 0; fi++) {
+            for (std::size_t fi = 0; fi < batch_fens.size() && remaining > 0; fi++) {
                 double value = (fi < values.size()) ? values[fi] : 0.0;
-                for (const auto& e : evalByFen[fens[fi]]) {
+                for (const auto& e : batch_entries[fi]) {
                     if (remaining <= 0) break;
                     std::size_t idx = e.first;
                     MCTSNode* leaf = e.second.first;
