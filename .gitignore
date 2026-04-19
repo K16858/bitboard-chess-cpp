@@ -6,3 +6,5 @@ notes/
 build/
 chess_engine*.so
 extern/
+compile_commands.json
+compile_commands.json.in

@@ -46,9 +46,45 @@ rebuild: clean all
 PYBIND11_INCLUDES := $(if $(wildcard extern/pybind11/include),-I extern/pybind11/include $(shell python3-config --includes 2>/dev/null),$(shell python3 -m pybind11 --includes 2>/dev/null))
 PYTHON_INCLUDES := $(shell python3-config --includes 2>/dev/null)
 
+define GEN_COMPILE_COMMANDS_PY
+import json
+import os
+
+def main():
+    root = os.environ["ROOT"]
+    pybind = os.environ.get("PYBIND", "").strip()
+    pyinc = os.environ.get("PYINC", "").strip()
+    cxx_base = "g++ -std=c++17 -Wall -Wextra -O2 -I include"
+    rows = []
+    for src, obj in [
+        ("src/bitboard.cpp", "bitboard.o"),
+        ("src/board.cpp", "board.o"),
+        ("src/main.cpp", "main.o"),
+        ("src/move.cpp", "move.o"),
+        ("src/movegen.cpp", "movegen.o"),
+        ("src/zobrist.cpp", "zobrist.o"),
+        ("src/mcts.cpp", "mcts.o"),
+    ]:
+        path = os.path.join(root, *src.split("/"))
+        cmd = "%s -c %s -o %s" % (cxx_base, path, obj)
+        rows.append({"directory": root, "command": cmd, "file": path})
+    pb = os.path.join(root, "src", "python_bindings.cpp")
+    pb_obj = os.path.join(root, "build", "python", "python_bindings.o")
+    cmd_pb = "%s -fPIC %s %s -c %s -o %s" % (cxx_base, pybind, pyinc, pb, pb_obj)
+    rows.append({"directory": root, "command": cmd_pb, "file": pb})
+    out = os.path.join(root, "compile_commands.json")
+    with open(out, "w") as f:
+        json.dump(rows, f, indent=2)
+
+if __name__ == "__main__":
+    main()
+endef
+
 # clangd 用 compile_commands.json を生成。make deps 後・python3-dev 入れてから実行。
-compile_commands: compile_commands.json.in
-	sed -e 's|@PROJECT_ROOT@|$(CURDIR)|g' -e 's|@PYBIND11_INCLUDES@|$(PYBIND11_INCLUDES)|g' -e 's|@PYTHON_INCLUDES@|$(PYTHON_INCLUDES)|g' $< > compile_commands.json
+compile_commands:
+	$(file >$(CURDIR)/.gen_compile_commands.py,$(GEN_COMPILE_COMMANDS_PY))
+	@ROOT="$(CURDIR)" PYBIND="$(PYBIND11_INCLUDES)" PYINC="$(PYTHON_INCLUDES)" python3 "$(CURDIR)/.gen_compile_commands.py"
+	@rm -f "$(CURDIR)/.gen_compile_commands.py"
 
 # Python 拡張モジュール（pybind11）。make deps で extern に取得するか pip install -r requirements.txt
 PYTHON_SRCS = bitboard.cpp board.cpp movegen.cpp move.cpp zobrist.cpp mcts.cpp python_bindings.cpp
